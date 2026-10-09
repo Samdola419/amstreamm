@@ -291,9 +291,86 @@
       .brand span { display: none; }
       .nav-link { padding: 8px 10px; font-size: 0.78rem; }
     }
+
+    /* AADS — popup on open + embedded home slot */
+    .aads-popup {
+      position: fixed; inset: 0; z-index: 100000;
+      display: flex; align-items: center; justify-content: center;
+      padding: 20px 16px;
+      background: rgba(0,0,0,0.72);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+    }
+    .aads-popup.is-closed { display: none; }
+    .aads-popup-card {
+      position: relative;
+      width: min(440px, 100%);
+      background: #141416;
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 18px;
+      padding: 18px 16px 16px;
+      box-shadow: 0 24px 64px rgba(0,0,0,0.55);
+    }
+    .aads-popup-close {
+      position: absolute; top: 10px; right: 10px;
+      width: 34px; height: 34px; border-radius: 50%;
+      background: rgba(255,255,255,0.1);
+      border: 1px solid rgba(255,255,255,0.14);
+      color: #fff; font-size: 0.95rem; line-height: 1;
+    }
+    .aads-kicker {
+      font-size: 0.72rem; font-weight: 700; letter-spacing: 0.08em;
+      text-transform: uppercase; color: var(--muted); margin-bottom: 10px;
+    }
+    .aads-continue {
+      display: block; width: 100%; margin-top: 12px;
+      min-height: 42px; border-radius: 999px;
+      background: #fff; color: #000; font-weight: 700; font-size: 0.9rem;
+    }
+    .aads-home {
+      position: relative; z-index: 2;
+      padding: 8px var(--pad) 4px;
+    }
+    .aads-home-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 12px 12px 14px;
+    }
+    .aads-home-label {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 8px; padding: 0 4px;
+      font-size: 0.72rem; font-weight: 700; letter-spacing: 0.08em;
+      text-transform: uppercase; color: var(--muted);
+    }
+    .aads-home-label span { color: var(--primary); font-weight: 600; letter-spacing: 0; text-transform: none; font-size: 0.75rem; }
+    #frame, .aads-frame { min-height: 90px; }
+    #frame iframe, .aads-frame iframe { min-height: 90px; background: #0c0c0e; border-radius: 10px; }
+    @media (max-width: 640px) {
+      #frame iframe { width: 100% !important; }
+    }
   </style>
 </head>
 <body>
+<div class="aads-popup" id="aadsPopup" role="dialog" aria-label="Sponsored message">
+  <div class="aads-popup-card">
+    <button class="aads-popup-close" type="button" onclick="closeAadsPopup()" aria-label="Close">✕</button>
+    <p class="aads-kicker">Sponsored</p>
+    <!-- BEGIN AADS AD UNIT 2457991 -->
+    <div class="aads-frame" style="width: 100%;margin: auto;position: relative; z-index: 1;">
+      <iframe data-aa="2457991" src="//acceptable.a-ads.com/2457991/?size=Adaptive"
+                        style="border:0; padding:0; width:100%; height:auto; overflow:hidden;display: block;margin: auto" title="Sponsored"></iframe>
+    </div>
+    <!-- END AADS AD UNIT 2457991 -->
+    <button class="aads-continue" type="button" onclick="closeAadsPopup()">Continue</button>
+  </div>
+</div>
+<script>
+  function closeAadsPopup() {
+    var el = document.getElementById('aadsPopup');
+    if (el) el.classList.add('is-closed');
+  }
+</script>
 <div class="app">
   <div class="topnav-wrap">
     <nav class="topnav">
@@ -321,6 +398,17 @@
       </div>
       <div class="hero-dots" id="heroDots"></div>
     </div>
+    <section class="aads-home" aria-label="Sponsored">
+      <div class="aads-home-card">
+        <div class="aads-home-label">Sponsored <span>Partner</span></div>
+        <!-- BEGIN AADS AD UNIT 2457991 -->
+        <div id="frame" style="width: 100%;margin: auto;position: relative; z-index: 2;">
+          <iframe data-aa="2457991" src="//acceptable.a-ads.com/2457991/?size=Adaptive"
+                            style="border:0; padding:0; width:70%; height:auto; overflow:hidden;display: block;margin: auto" title="Sponsored"></iframe>
+        </div>
+        <!-- END AADS AD UNIT 2457991 -->
+      </div>
+    </section>
     <div class="home-content" id="homeRows"></div>
   </div>
 
