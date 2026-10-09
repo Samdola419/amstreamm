@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
+  <meta name="6a97888e-site-verification" content="dd5b24e8634d20e23406825d1ece7de9">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <meta name="theme-color" content="#07100a">
   <meta name="description" content="Discover anime, movies, and series with AnimeStream. Browse trending picks, save a personal list, and continue watching across the experience.">
@@ -301,64 +302,6 @@
       .nav-link { padding: 8px 10px; font-size: 0.78rem; }
     }
 
-    /* AADS — popup on open + embedded home slot */
-    .aads-popup {
-      position: fixed; inset: 0; z-index: 100000;
-      display: flex; align-items: center; justify-content: center;
-      padding: 20px 16px;
-      background: rgba(0,0,0,0.78);
-      backdrop-filter: blur(8px);
-      -webkit-backdrop-filter: blur(8px);
-    }
-    .aads-popup.is-closed { inset:auto 16px 16px auto; padding:0; background:transparent; backdrop-filter:none; -webkit-backdrop-filter:none; align-items:flex-end; justify-content:flex-end; pointer-events:none; }
-    .aads-popup.is-dismissed { display:none; }
-    .aads-popup-card {
-      position: relative;
-      width: min(440px, 100%);
-      background: linear-gradient(155deg, #161d18, #101211 68%);
-      border: 1px solid rgba(34,197,94,0.28);
-      border-radius: 18px;
-      padding: 18px 16px 16px;
-      box-shadow: 0 24px 64px rgba(0,0,0,0.55);
-    }
-    .aads-popup-close {
-      position: absolute; top: 10px; right: 10px;
-      width: 34px; height: 34px; border-radius: 50%;
-      background: rgba(255,255,255,0.1);
-      border: 1px solid rgba(255,255,255,0.14);
-      color: #fff; font-size: 0.95rem; line-height: 1;
-    }
-    .aads-kicker {
-      font-size: 0.72rem; font-weight: 700; letter-spacing: 0.08em;
-      text-transform: uppercase; color: var(--muted); margin-bottom: 10px;
-    }
-    .aads-continue {
-      display: block; width: 100%; margin-top: 12px;
-      min-height: 42px; border-radius: 999px;
-      background: var(--primary); color: #061009; font-weight: 800; font-size: 0.9rem;
-    }
-    .aads-home {
-      position: relative; z-index: 2;
-      padding: 8px var(--pad) 4px;
-    }
-    .aads-home-card {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 12px 12px 14px;
-    }
-    .aads-home-label {
-      display: flex; align-items: center; justify-content: space-between;
-      margin-bottom: 8px; padding: 0 4px;
-      font-size: 0.72rem; font-weight: 700; letter-spacing: 0.08em;
-      text-transform: uppercase; color: var(--muted);
-    }
-    .aads-home-label span { color: var(--primary); font-weight: 600; letter-spacing: 0; text-transform: none; font-size: 0.75rem; }
-    #frame, .aads-frame { min-height: 90px; }
-    #frame iframe, .aads-frame iframe { min-height: 90px; background: #0c0c0e; border-radius: 10px; }
-    @media (max-width: 640px) {
-      #frame iframe { width: 100% !important; }
-    }
 
     /* Cinematic dashboard layout inspired by the supplied references; original green brand accent retained. */
     body { background: radial-gradient(ellipse at 50% 0%, #17251c 0%, var(--bg) 48rem); }
@@ -388,8 +331,7 @@
     .trend-poster { width:42px; height:56px; object-fit:cover; border-radius:5px; background:#222; }
     .trend-name { display:block; overflow:hidden; white-space:nowrap; text-overflow:ellipsis; font-size:.82rem; font-weight:650; }
     .trend-meta { display:block; color:var(--muted); font-size:.68rem; margin-top:5px; }
-    .aads-home { padding:18px 0 8px; }
-    .aads-home-card { border-radius:12px; background:var(--surface); padding:10px; }
+.aads-home-card { border-radius:12px; background:var(--surface); padding:10px; }
     .home-content { margin-top:0; }
     .section-head { padding-top:22px; }
     .section-title { color:var(--primary); }
@@ -419,8 +361,7 @@
       .hero-desc { -webkit-line-clamp:3; }
       .trending-list { grid-template-columns:1fr; }
       .trending-list .trend-item:nth-child(n+4) { display:none; }
-      .aads-home-card { padding:8px; }
-    }
+}
 
 
     /* Premium multi-screen streaming system — original charcoal + emerald brand palette */
@@ -502,16 +443,11 @@
     .empty-collection h2 { color:#eff8f1;font-size:1.2rem;margin-bottom:8px; }
     .empty-collection p { line-height:1.6;font-size:.88rem;max-width:390px;margin:0 auto 20px; }
     .empty-collection button { background:var(--primary);color:#061009;font-weight:800;border-radius:8px;padding:12px 18px; }
-    .aads-popup-card { box-shadow:0 28px 90px rgba(0,0,0,.68),0 0 0 1px rgba(34,197,94,.05); }
-    .aads-kicker { color:#9fdfb2;letter-spacing:.06em; }
-    .aads-popup-close { background:rgba(255,255,255,.07); }
-    #frame, .aads-home { display:none !important; }
-    .aads-popup.is-closed .aads-popup-card { pointer-events:auto; width:min(330px,calc(100vw - 24px)); padding:8px; border-radius:13px; background:rgba(12,17,13,.97); box-shadow:0 12px 42px rgba(0,0,0,.5); }
-    .aads-popup.is-closed .aads-kicker { font-size:.62rem;letter-spacing:.08em;margin:0 36px 5px 4px; }
-    .aads-popup.is-closed .aads-popup-close { top:5px;right:5px;width:26px;height:26px;font-size:.75rem; }
-    .aads-popup.is-closed .aads-continue { display:none; }
-    .aads-popup.is-closed .aads-frame { min-height:70px; }
-    .aads-popup.is-closed .aads-frame iframe { min-height:70px;height:70px !important;border-radius:8px; }
+.aads-kicker { color:#9fdfb2;letter-spacing:.06em; }
+#frame, .aads-home { display:none !important; }
+.aads-popup.is-closed .aads-kicker { font-size:.62rem;letter-spacing:.08em;margin:0 36px 5px 4px; }
+.aads-popup.is-closed .aads-continue { display:none; }
+.aads-popup.is-closed .aads-frame iframe { min-height:70px;height:70px !important;border-radius:8px; }
 
     @media (min-width:1300px) { .detail-hero { min-height:690px; } }
     @media (max-width:850px) { .detail-poster-wrap { flex-basis:150px; }.detail-hero { min-height:unset;padding-top:100px;gap:20px; } }
@@ -532,10 +468,8 @@
       .detail-actions .btn-play,.btn-list { padding:11px 14px; }
       .collection-hero { padding-top:94px; }
       .grid { grid-template-columns:repeat(auto-fill,minmax(min(116px,42vw),1fr));gap:19px 10px; }
-      .aads-popup:not(.is-closed) { padding:14px; }
-      .aads-popup:not(.is-closed) .aads-popup-card { padding:17px 13px 13px; }
-      .aads-popup.is-closed { right:8px;bottom:calc(8px + env(safe-area-inset-bottom)); }
-      .aads-popup.is-closed .aads-popup-card { width:min(300px,calc(100vw - 16px)); }
+.aads-popup:not(.is-closed) .aads-popup-card { padding:17px 13px 13px; }
+.aads-popup.is-closed .aads-popup-card { width:min(300px,calc(100vw - 16px)); }
     }
     @media (prefers-reduced-motion: reduce) { *,*::before,*::after { scroll-behavior:auto !important;animation:none !important;transition:none !important; } }
   
@@ -601,23 +535,17 @@
     .btn-play i,.btn-more i,.btn-list i { font-size:1.06rem; }
 
     /* The popup and the all-page sponsor strip are separate ad placements. */
-    .aads-popup { z-index:100000; }
-    .aads-popup.is-closed { display:none!important; }
-    .aads-popup-card { width:min(440px,100%);border-radius:20px;padding:19px 18px 17px;background:linear-gradient(155deg,#141c16,#0b100d 74%); }
-    .aads-popup-close { display:grid;place-items:center;font-size:1.05rem; }
-    .aads-continue { display:flex;align-items:center;justify-content:center;gap:8px; }
-    .aads-dock {
+.aads-popup.is-closed { display:none!important; }
+.aads-popup-close { display:grid;place-items:center;font-size:1.05rem; }
+.aads-dock {
       position:fixed;z-index:110;left:50%;bottom:calc(10px + env(safe-area-inset-bottom));transform:translateX(-50%);
       width:min(460px,calc(100vw - 28px));padding:8px 10px 9px;border-radius:15px;
       background:linear-gradient(135deg,rgba(17,25,19,.97),rgba(10,14,11,.97));
       border:1px solid rgba(174,235,189,.16);box-shadow:0 15px 55px rgba(0,0,0,.48),0 0 0 1px rgba(4,20,9,.4);backdrop-filter:blur(22px);-webkit-backdrop-filter:blur(22px);
     }
-    .aads-dock-label { display:flex;align-items:center;justify-content:space-between;gap:8px;padding:0 3px 6px;color:#a9b8ad;font-size:.62rem;font-weight:800;text-transform:uppercase;letter-spacing:.09em; }
-    .aads-dock-label > span:first-child { display:inline-flex;align-items:center;gap:6px;color:#bcecc8; }
-    .aads-dock-label i { font-size:.88rem;color:var(--primary); }
-    .aads-dock-note { font-size:.62rem;font-weight:500;letter-spacing:0;text-transform:none;color:#7e9183; }
-    .aads-dock-frame { width:100%;min-height:64px;display:flex;align-items:center;justify-content:center;overflow:hidden;border-radius:9px;background:rgba(255,255,255,.025); }
-    .aads-dock-frame iframe { display:block;width:100%;min-height:64px;max-width:100%;border:0;border-radius:8px; }
+.aads-dock-label > span:first-child { display:inline-flex;align-items:center;gap:6px;color:#bcecc8; }
+.aads-dock-note { font-size:.62rem;font-weight:500;letter-spacing:0;text-transform:none;color:#7e9183; }
+.aads-dock-frame iframe { display:block;width:100%;min-height:64px;max-width:100%;border:0;border-radius:8px; }
     .page { padding-bottom:12px; }
     .player-shell { padding-bottom:48px; }
     .detail-lower { padding-bottom:48px; }
@@ -630,8 +558,7 @@
       #browseTitle { font-size:clamp(2.45rem,10vw,3.7rem); }
       .browse-intro { max-width:500px;font-size:.9rem; }
       .browse-hero-foot { margin-top:19px; }
-      .aads-dock { width:min(390px,calc(100vw - 20px));bottom:calc(7px + env(safe-area-inset-bottom));padding:7px 8px 8px;border-radius:12px; }
-      .aads-dock-frame,.aads-dock-frame iframe { min-height:55px; }
+.aads-dock-frame,.aads-dock-frame iframe { min-height:55px; }
       :root { --dock-gap: 98px; }
     }
     @media (max-width:480px) {
@@ -644,8 +571,7 @@
       #browseView .grid { grid-template-columns:repeat(3,minmax(0,1fr));gap:18px 9px;padding-left:14px;padding-right:14px; }
       .card-title { font-size:.76rem; }
       .card-sub { font-size:.65rem; }
-      .aads-dock-note { display:none; }
-      .aads-dock-label { padding-bottom:5px; }
+.aads-dock-label { padding-bottom:5px; }
       .detail-back { margin-bottom:18px; }
     }
 
@@ -671,18 +597,12 @@
     #browseRows .row { padding-left:clamp(16px,4.5vw,68px);padding-right:clamp(16px,4.5vw,68px); }
     #browseRows .section-title { color:#f2faf4;font-size:clamp(1.08rem,2.3vw,1.35rem); }
     #browseRows .section-title em { color:var(--primary);border:0; }
-    .home-sponsored-section { margin:27px clamp(16px,4.5vw,68px) 25px;padding:13px 14px 14px;border-radius:13px;background:linear-gradient(135deg,rgba(18,27,21,.96),rgba(9,13,10,.94));border:1px solid rgba(181,238,194,.11);box-shadow:0 12px 32px rgba(0,0,0,.14); }
-    .sponsor-detached { display:none !important; }
-    .sponsor-slot { display:block; min-height:0; width:100%; }
-    #playerSponsorSlot { clear:both; }
-    #playerSponsorSlot .home-sponsored-section { margin-top:8px; }
-    .home-sponsored-head { display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:9px;padding:0 2px;color:#c4d4c8;font-size:.68rem;font-weight:800;letter-spacing:.08em;text-transform:uppercase; }
-    .home-sponsored-head span { display:inline-flex;align-items:center;gap:7px;color:#a9eabc; }
-    .home-sponsored-head i { font-size:1rem;color:var(--primary); }
-    .home-sponsored-head small { color:#77897d;font-size:.65rem;font-weight:500;letter-spacing:0;text-transform:none; }
-    .home-sponsored-frame { overflow:hidden;border-radius:8px;background:rgba(255,255,255,.02);min-height:90px;display:flex;align-items:center;justify-content:center; }
-    .home-sponsored-frame iframe { width:100%;min-height:90px;max-width:100%;border:0;border-radius:8px; }
-    body { padding-bottom:0!important; }
+.sponsor-detached { display:none !important; }
+#playerSponsorSlot { clear:both; }
+.home-sponsored-head { display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:9px;padding:0 2px;color:#c4d4c8;font-size:.68rem;font-weight:800;letter-spacing:.08em;text-transform:uppercase; }
+.home-sponsored-head i { font-size:1rem;color:var(--primary); }
+.home-sponsored-frame { overflow:hidden;border-radius:8px;background:rgba(255,255,255,.02);min-height:90px;display:flex;align-items:center;justify-content:center; }
+body { padding-bottom:0!important; }
     .app { padding-bottom:22px; }
     .search-overlay { align-items:stretch;overflow-y:auto;padding:0 max(16px,env(safe-area-inset-left)) 28px!important;background:rgba(5,8,6,.88)!important;backdrop-filter:blur(30px) saturate(1.25)!important;-webkit-backdrop-filter:blur(30px) saturate(1.25)!important; }
     .search-shell { width:min(1240px,100%);margin:0 auto;padding:clamp(18px,3vw,35px) 0 22px; }
@@ -718,8 +638,7 @@
       .brand img { width:28px;height:28px; }
       #browseRows .section-head { padding-left:16px;padding-right:16px; }
       #browseRows .row { padding-left:16px;padding-right:16px; }
-      .home-sponsored-section { margin-left:16px;margin-right:16px;padding:10px; }
-      .search-shell { padding-top:calc(12px + env(safe-area-inset-top)); }
+.search-shell { padding-top:calc(12px + env(safe-area-inset-top)); }
       .search-topline { padding-bottom:20px; }
       .search-heading { padding:26px 0 19px; }
       .search-box { min-height:60px;border-radius:13px;padding:0 13px;gap:10px; }
@@ -733,28 +652,6 @@
   </style>
 </head>
 <body>
-<div class="aads-popup" id="aadsPopup" role="dialog" aria-modal="true" aria-label="Sponsored message">
-  <div class="aads-popup-card">
-    <button class="aads-popup-close" type="button" onclick="closeAadsPopup()" aria-label="Close sponsor popup"><i class="ri-close-line" aria-hidden="true"></i></button>
-    <p class="aads-kicker">Sponsored · supporting free streaming</p>
-    <!-- BEGIN AADS AD UNIT 2457991 -->
-    <div class="aads-frame" style="width: 100%;margin: auto;position: relative; z-index: 1;">
-      <iframe data-aa="2457991" src="//acceptable.a-ads.com/2457991/?size=Adaptive"
-                        style="border:0; padding:0; width:100%; height:auto; overflow:hidden;display: block;margin: auto" title="Sponsored"></iframe>
-    </div>
-    <!-- END AADS AD UNIT 2457991 -->
-    <button class="aads-continue" type="button" onclick="continueAadsPopup()">Continue</button>
-  </div>
-</div>
-<script>
-  function closeAadsPopup() {
-    var el = document.getElementById('aadsPopup');
-    if (el) { el.classList.add('is-dismissed'); el.setAttribute('aria-hidden','true'); }
-  }
-  function continueAadsPopup() {
-    closeAadsPopup();
-  }
-</script>
 <div class="app">
   <div class="topnav-wrap">
     <nav class="topnav">
@@ -822,7 +719,6 @@
     <div id="browseRows"></div>
     <div class="grid hidden" id="browseGrid"></div>
     <button class="load-more hidden" id="loadMoreBtn" onclick="loadMoreBrowse()"><i class="ri-add-line" aria-hidden="true"></i> Load more</button>
-    <div id="browseSponsorSlot" class="sponsor-slot" aria-label="Sponsored content position"></div>
   </div>
 
   <div id="playerView" class="page hidden-page">
@@ -847,7 +743,6 @@
         </div>
       </div>
     </div>
-    <div id="playerSponsorSlot" class="sponsor-slot" aria-label="Sponsored content position"></div>
   </div>
 
   <div id="detailView" class="page hidden-page">
@@ -872,7 +767,6 @@
       <div class="detail-facts" id="detailFacts"></div>
       <div id="detailRelated"></div>
     </div>
-    <div id="detailSponsorSlot" class="sponsor-slot" aria-label="Sponsored content position"></div>
   </div>
 
   <div id="myListView" class="page hidden-page">
@@ -889,7 +783,6 @@
       <button class="chip" data-list-filter="movie" onclick="filterMyList('movie')">Movies</button>
     </div>
     <div class="grid" id="myListGrid"></div>
-    <div id="myListSponsorSlot" class="sponsor-slot" aria-label="Sponsored content position"></div>
   </div>
 
   <div id="continueView" class="page hidden-page">
@@ -899,15 +792,7 @@
       <p>Your recent picks are saved on this device for a smoother return.</p>
     </div>
     <div class="grid" id="continueGrid"></div>
-    <div id="continueSponsorSlot" class="sponsor-slot" aria-label="Sponsored content position"></div>
   </div>
-</div>
-
-<div id="sponsorStash" hidden>
-  <section class="home-sponsored-section sponsor-detached" id="globalSponsoredSection" aria-label="Sponsored" aria-live="off">
-    <div class="home-sponsored-head"><span><i class="ri-advertisement-line" aria-hidden="true"></i> Sponsored</span><small>Supports AnimeStream</small></div>
-    <div class="home-sponsored-frame"><iframe data-aa="2457991" src="//acceptable.a-ads.com/2457991/?size=Adaptive" title="Sponsored content" loading="lazy" style="border:0;padding:0;width:100%;height:auto;overflow:hidden;display:block;margin:auto"></iframe></div>
-  </section>
 </div>
 
 <div class="search-overlay" id="searchOverlay" aria-label="Search AnimeStream">
@@ -1213,18 +1098,6 @@ function scrollRow(id, dir) {
 function setNav(mode) {
   document.querySelectorAll('.nav-link').forEach(el => el.classList.toggle('active', el.dataset.nav === mode));
 }
-function placeSponsoredSection(pageId) {
-  const section = $('globalSponsoredSection');
-  if (!section) return;
-  const slotByPage = {
-    homeView: 'homeSponsorSlot', browseView: 'browseSponsorSlot', playerView: 'playerSponsorSlot',
-    detailView: 'detailSponsorSlot', myListView: 'myListSponsorSlot', continueView: 'continueSponsorSlot'
-  };
-  const slot = $(slotByPage[pageId] || '');
-  if (!slot) { section.classList.add('sponsor-detached'); return; }
-  if (section.parentElement !== slot) slot.appendChild(section);
-  section.classList.remove('sponsor-detached');
-}
 function showPage(id) {
   ['homeView', 'browseView', 'playerView', 'detailView', 'myListView', 'continueView'].forEach(pid => {
     const el = $(pid);
@@ -1237,7 +1110,6 @@ function showPage(id) {
       setTimeout(() => { if (!el.classList.contains('active')) el.classList.add('hidden-page'); }, 280);
     }
   });
-  placeSponsoredSection(id);
   if (id !== 'playerView') $('player').src = '';
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
@@ -1336,10 +1208,6 @@ function nav(mode, genre, silent) {
 }
 
 async function loadHome() {
-  const sponsor = $('globalSponsoredSection'), sponsorStash = $('sponsorStash');
-  if (sponsor && sponsorStash && sponsor.parentElement !== sponsorStash) {
-    sponsorStash.appendChild(sponsor); sponsor.classList.add('sponsor-detached');
-  }
   $('homeRows').innerHTML = '<div class="state">Loading…</div>';
   const [animeTrend, animePop, moviesNew, moviesPop, movAction, movComedy, movAni, movAdv, series, romance, action, comedy] = await Promise.all([
     anilist(Q_ANIME_TREND, { page: 1 }).then(d => (d.Page.media || []).map(mapAnime)).catch(() => []),
@@ -1381,7 +1249,6 @@ async function loadHome() {
   let html = '';
   if (moviesNew.length) html += rowHTML('New <em>Movies</em>', moviesNew.slice(0, 24), 'movies', 'rowMovies', 'New');
   if (moviesPop.length) html += rowHTML('Popular <em>Movies</em>', moviesPop.slice(0, 24), 'movies', 'rowMoviesPop', 'Popular');
-  html += '<div id="homeSponsorSlot" class="sponsor-slot" aria-label="Sponsored content position"></div>';
   if (movAction.length) html += rowHTML('Action <em>Movies</em>', movAction.slice(0, 24), 'movies', 'rowMovAction', 'Action');
   if (movComedy.length) html += rowHTML('Comedy <em>Movies</em>', movComedy.slice(0, 24), 'movies', 'rowMovComedy', 'Comedy');
   if (movAni.length) html += rowHTML('Animation <em>Movies</em>', movAni.slice(0, 24), 'movies', 'rowMovAni', 'Animation');
@@ -1396,7 +1263,6 @@ async function loadHome() {
   if (recent.length) html = rowHTML('Continue <em>Watching</em>', recent, null, 'continueRow') + html;
   $('homeRows').innerHTML = html || '<div class="state">Could not load content</div>';
   const activePage = document.querySelector('.page.active')?.id || 'homeView';
-  placeSponsoredSection(activePage);
   if ($('searchOverlay')?.classList.contains('show') && !$('searchInput').value.trim()) renderSearchDiscovery();
 }
 
