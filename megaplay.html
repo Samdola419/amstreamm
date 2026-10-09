@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="referrer" content="unsafe-url">
+  <title>Player</title>
+  <style>
+    html, body, iframe { margin: 0; width: 100%; height: 100%; border: 0; background: #000; }
+  </style>
+</head>
+<body>
+  <iframe id="p" allow="autoplay; fullscreen; encrypted-media; picture-in-picture" allowfullscreen referrerpolicy="unsafe-url"></iframe>
+  <script>
+    const q = new URLSearchParams(location.search);
+    const lang = q.get('lang') === 'dub' ? 'dub' : 'sub';
+    const ep = q.get('ep') || '1';
+    const mal = (q.get('mal') || '').replace(/[^\d]/g, '');
+    const ani = (q.get('ani') || '').replace(/[^\d]/g, '');
+    const embed = (q.get('embed') || '').replace(/[^\d]/g, '');
+    let src = '';
+    if (embed) src = 'https://megaplay.buzz/stream/s-2/' + embed + '/' + lang;
+    else if (mal) src = 'https://megaplay.buzz/stream/mal/' + mal + '/' + ep + '/' + lang;
+    else if (ani) src = 'https://megaplay.buzz/stream/ani/' + ani + '/' + ep + '/' + lang;
+    if (src) document.getElementById('p').src = src;
+  </script>
+</body>
+</html>
