@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -449,6 +450,20 @@
 .aads-popup.is-closed .aads-continue { display:none; }
 .aads-popup.is-closed .aads-frame iframe { min-height:70px;height:70px !important;border-radius:8px; }
 
+
+/* VAST pre-roll and mid-roll player */
+.vast-ad-overlay{position:fixed;inset:0;z-index:10050;background:rgba(0,0,0,.96);display:none;align-items:center;justify-content:center;padding:16px}
+.vast-ad-overlay.is-visible{display:flex}
+.vast-ad-card{width:min(100%,1000px);color:#fff;font-family:inherit}
+.vast-ad-top{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:10px;font-size:.82rem;color:#ddd}
+.vast-ad-video-wrap{position:relative;background:#000;aspect-ratio:16/9;border-radius:10px;overflow:hidden}
+.vast-ad-video{display:block;width:100%;height:100%;background:#000}
+.vast-ad-click{position:absolute;inset:0;display:block;cursor:pointer;pointer-events:none}
+.vast-ad-click.is-active{pointer-events:auto}
+.vast-ad-status{color:#aaa;font-size:.78rem;margin-top:9px}
+.vast-ad-close{border:1px solid #555;border-radius:7px;padding:8px 12px;background:#181818;color:#fff;cursor:pointer}
+.vast-ad-close:disabled{opacity:.45;cursor:default}
+
     @media (min-width:1300px) { .detail-hero { min-height:690px; } }
     @media (max-width:850px) { .detail-poster-wrap { flex-basis:150px; }.detail-hero { min-height:unset;padding-top:100px;gap:20px; } }
     @media (max-width:620px) {
@@ -821,6 +836,15 @@ body { padding-bottom:0!important; }
       <button type="button" onclick="searchFor('Chainsaw Man')">Chainsaw Man</button>
       <button type="button" onclick="searchFor('Demon Slayer')">Demon Slayer</button>
     </div>
+  </div>
+</div>
+
+
+<div id="vastAdOverlay" class="vast-ad-overlay" role="dialog" aria-modal="true" aria-label="Advertisement">
+  <div class="vast-ad-card">
+    <div class="vast-ad-top"><span id="vastAdLabel">Advertisement · Loading…</span><button id="vastAdClose" class="vast-ad-close" type="button" disabled>Ad playing</button></div>
+    <div class="vast-ad-video-wrap"><video id="vastAdVideo" class="vast-ad-video" playsinline controls preload="auto"></video><a id="vastAdClick" class="vast-ad-click" target="_blank" rel="noopener noreferrer" aria-label="Visit advertiser"></a></div>
+    <div id="vastAdStatus" class="vast-ad-status">Your show will resume after the advertisement.</div>
   </div>
 </div>
 
@@ -1602,12 +1626,106 @@ async function runSearch(q) {
 }
 
 function showPlayer() { setNav(''); closeSearch(); showPage('playerView'); }
+const VAST_TAG_URL = 'https://s.magsrv.com/v1/vast.php?idz=6051704';
+let vastPendingUrl = '';
+let vastAdActive = false;
+let vastSessionToken = 0;
+let vastViewSeconds = 0;
+let vastNextMidroll = randomMidrollSeconds();
+let vastLastActivity = Date.now();
+let vastAdTrackers = {};
+let vastClickThrough = '';
+function randomMidrollSeconds(){ return (20 + Math.random() * 5) * 60; }
+function vastTrack(name){ (vastAdTrackers[name] || []).forEach(url => { try { const img = new Image(); img.src = url; } catch(_){} }); }
+function vastText(node, selector){ return node.querySelector(selector)?.textContent?.trim() || ''; }
+function vastResolveUrl(base, value){ try { return new URL(value, base).href; } catch(_) { return value; } }
+async function fetchVastCreative(url, depth=0){
+  if(depth>4) throw new Error('Too many VAST wrappers');
+  const response=await fetch(url, {cache:'no-store', mode:'cors'});
+  if(!response.ok) throw new Error('VAST request failed ('+response.status+')');
+  const xmlText=await response.text();
+  const doc=new DOMParser().parseFromString(xmlText,'application/xml');
+  if(doc.querySelector('parsererror')) throw new Error('Invalid VAST XML');
+  const wrapper=doc.querySelector('Wrapper');
+  if(wrapper){
+    const next=vastText(wrapper,'VASTAdTagURI');
+    if(!next) throw new Error('VAST wrapper has no ad tag URI');
+    const wrapperTrackers={};
+    wrapper.querySelectorAll('Impression').forEach(n=>{const v=n.textContent.trim();if(v)(wrapperTrackers.impression ||= []).push(vastResolveUrl(url,v));});
+    wrapper.querySelectorAll('Tracking').forEach(n=>{const ev=n.getAttribute('event');const v=n.textContent.trim();if(ev&&v)(wrapperTrackers[ev] ||= []).push(vastResolveUrl(url,v));});
+    const creative=await fetchVastCreative(vastResolveUrl(url,next),depth+1);
+    Object.keys(wrapperTrackers).forEach(k=>{creative.trackers[k]=[...(creative.trackers[k]||[]),...wrapperTrackers[k]];});
+    return creative;
+  }
+  const linear=doc.querySelector('Linear');
+  if(!linear) throw new Error('VAST contains no linear video ad');
+  const media=[...linear.querySelectorAll('MediaFile')].map(n=>({url:n.textContent.trim(),type:n.getAttribute('type')||'',delivery:n.getAttribute('delivery')||''})).filter(m=>m.url && (!m.type || m.type.startsWith('video/'))).sort((a,b)=>Number(b.type.includes('mp4'))-Number(a.type.includes('mp4')));
+  if(!media.length) throw new Error('VAST has no compatible video media file');
+  const trackers={};
+  doc.querySelectorAll('Impression').forEach(n=>{const v=n.textContent.trim();if(v)(trackers.impression ||= []).push(vastResolveUrl(url,v));});
+  linear.querySelectorAll('Tracking').forEach(n=>{const ev=n.getAttribute('event');const v=n.textContent.trim();if(ev&&v)(trackers[ev] ||= []).push(vastResolveUrl(url,v));});
+  const click=vastText(linear,'VideoClicks ClickThrough') || vastText(doc,'VideoClicks ClickThrough');
+  return {media:media[0],trackers,click:click?vastResolveUrl(url,click):'',duration:vastText(linear,'Duration')};
+}
+function vastParseDuration(value){const m=(value||'').match(/^(\d+):([0-5]\d):([0-5]\d)(?:\.(\d+))?$/);return m?Number(m[1])*3600+Number(m[2])*60+Number(m[3]):0;}
+function vastFinishAd(){
+  if(!vastAdActive)return;
+  vastAdActive=false;
+  const video=$('vastAdVideo'); try{video.pause();}catch(_){}
+  video.removeAttribute('src'); video.load();
+  $('vastAdOverlay').classList.remove('is-visible');
+  $('vastAdClick').classList.remove('is-active'); $('vastAdClick').removeAttribute('href');
+  $('player').src=vastPendingUrl;
+  vastViewSeconds=0; vastNextMidroll=randomMidrollSeconds();
+  vastLastActivity=Date.now();
+}
+async function runVastAd(reason){
+  if(vastAdActive || !vastPendingUrl)return;
+  const token=++vastSessionToken; vastAdActive=true;
+  const overlay=$('vastAdOverlay'), video=$('vastAdVideo'), close=$('vastAdClose');
+  $('player').src='about:blank';
+  overlay.classList.add('is-visible'); $('vastAdLabel').textContent=reason==='preroll'?'Advertisement · Before your show':'Advertisement · Mid-roll';
+  $('vastAdStatus').textContent='Loading advertisement…'; close.disabled=true; close.textContent='Ad playing';
+  try{
+    const ad=await fetchVastCreative(VAST_TAG_URL + (VAST_TAG_URL.includes('?')?'&':'?')+'cb='+Date.now());
+    if(token!==vastSessionToken)return;
+    vastAdTrackers=ad.trackers||{}; vastClickThrough=ad.click||'';
+    $('vastAdClick').href=vastClickThrough||'#'; $('vastAdClick').classList.toggle('is-active',!!vastClickThrough);
+    video.src=vastResolveUrl(VAST_TAG_URL,ad.media.url);
+    video.currentTime=0; video.muted=false;
+    $('vastAdStatus').textContent='The show resumes when the ad finishes.';
+    video.onplaying=()=>vastTrack('start');
+    video.ontimeupdate=()=>{const d=video.duration;if(d>0){if(video.currentTime>=d*.25)vastTrackOnce('firstQuartile');if(video.currentTime>=d*.5)vastTrackOnce('midpoint');if(video.currentTime>=d*.75)vastTrackOnce('thirdQuartile');}};
+    video.onended=()=>{vastTrack('complete');vastFinishAd();};
+    video.onerror=()=>vastFinishAd();
+    await video.play();
+    vastTrack('impression');
+  }catch(err){
+    if(token!==vastSessionToken)return;
+    console.warn('VAST ad could not play; continuing to the show:',err);
+    $('vastAdStatus').textContent='Advertisement unavailable. Continuing to the show…';
+    vastFinishAd();
+  }
+}
+let vastTrackedEvents=new Set();
+function vastTrackOnce(name){if(vastTrackedEvents.has(name))return;vastTrackedEvents.add(name);vastTrack(name);}
 function playNow(url) {
   if (!url) return;
-  const player = $('player');
-  player.referrerPolicy = 'unsafe-url';
-  player.src = url.replace(/^http:\/\//, 'https://');
+  const normalized = url.replace(/^http:\/\//, 'https://');
+  vastPendingUrl = normalized;
+  vastTrackedEvents = new Set();
+  if (vastAdActive) { vastSessionToken++; try{$('vastAdVideo').pause();}catch(_){} vastAdActive=false; $('vastAdOverlay').classList.remove('is-visible'); }
+  runVastAd('preroll');
 }
+// Count only active time while the player page is visible and the viewer has interacted recently.
+['pointerdown','keydown','touchstart','mousemove'].forEach(evt=>document.addEventListener(evt,()=>{vastLastActivity=Date.now();},{passive:true}));
+setInterval(()=>{
+  if(vastAdActive || !vastPendingUrl || document.hidden || !$('playerView') || $('playerView').classList.contains('hidden-page'))return;
+  vastViewSeconds++;
+  if(vastViewSeconds>=vastNextMidroll)runVastAd('midroll');
+},1000);
+$('vastAdVideo')?.addEventListener('click',()=>{if(vastClickThrough)window.open(vastClickThrough,'_blank','noopener');});
+$('vastAdClose')?.addEventListener('click',()=>{if(!$('vastAdClose').disabled)vastFinishAd();});
 
 function renderServers(list) {
   if (!list || list.length < 2) {
