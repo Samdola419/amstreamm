@@ -663,6 +663,339 @@ body { padding-bottom:0!important; }
     }
     @media (prefers-reduced-motion:reduce) { .topnav-wrap { transition:none!important; } }
 
+  
+
+    /* ANIMESTREAM LIQUID MIRROR GLASS NAV — context-aware, low-clutter behavior */
+    .topnav-wrap {
+      top: 13px !important;
+      padding: 0 clamp(9px, 2vw, 28px) !important;
+      z-index: 500 !important;
+      transform: translate3d(0,0,0);
+      opacity: 1;
+      transition: transform .34s cubic-bezier(.2,.75,.25,1), opacity .24s ease, visibility .24s ease;
+      will-change: transform, opacity;
+    }
+    .topnav-wrap.nav-hidden {
+      transform: translate3d(0,calc(-100% - 24px),0) !important;
+      opacity: 0 !important;
+      pointer-events: none !important;
+    }
+    .topnav-wrap.context-hidden {
+      visibility: hidden !important;
+      opacity: 0 !important;
+      pointer-events: none !important;
+      transform: translate3d(0,calc(-110% - 28px),0) !important;
+    }
+    .topnav {
+      position: relative !important;
+      isolation: isolate;
+      overflow-x: auto;
+      scrollbar-width: none;
+      border-radius: 999px !important;
+      padding: 7px 10px !important;
+      gap: 5px !important;
+      background:
+        linear-gradient(180deg, rgba(255,255,255,.25) 0%, rgba(255,255,255,.115) 9%, rgba(255,255,255,.035) 27%, rgba(18,22,20,.42) 58%, rgba(5,8,6,.66) 100%),
+        linear-gradient(115deg, rgba(255,255,255,.11), rgba(255,255,255,.015) 36%, rgba(34,197,94,.055) 76%, rgba(255,255,255,.08)),
+        rgba(20,24,22,.43) !important;
+      border: 1px solid rgba(255,255,255,.38) !important;
+      -webkit-backdrop-filter: blur(38px) saturate(210%) contrast(1.08) !important;
+      backdrop-filter: blur(38px) saturate(210%) contrast(1.08) !important;
+      box-shadow:
+        inset 0 1px 0 rgba(255,255,255,.64),
+        inset 0 2px 8px rgba(255,255,255,.075),
+        inset 0 -1px 0 rgba(0,0,0,.42),
+        inset 0 -8px 22px rgba(0,0,0,.13),
+        0 2px 2px rgba(255,255,255,.06),
+        0 16px 46px rgba(0,0,0,.39),
+        0 4px 14px rgba(0,0,0,.2) !important;
+    }
+    .topnav::-webkit-scrollbar { display:none; }
+    .topnav::before {
+      content: "";
+      position: absolute;
+      inset: 1px;
+      border-radius: inherit;
+      z-index: 0;
+      pointer-events: none;
+      background:
+        linear-gradient(112deg, rgba(255,255,255,.36) 0%, rgba(255,255,255,.10) 12%, transparent 29%, rgba(255,255,255,.055) 47%, transparent 63%, rgba(255,255,255,.14) 86%, rgba(255,255,255,.20) 100%),
+        linear-gradient(180deg, rgba(255,255,255,.13), transparent 42%, rgba(0,0,0,.12));
+      opacity: .88;
+    }
+    .topnav::after {
+      content: "";
+      position: absolute;
+      top: 1px;
+      left: 11%;
+      right: 11%;
+      height: 1px;
+      border-radius: 99px;
+      z-index: 2;
+      pointer-events: none;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,.9) 18%, rgba(255,255,255,.37) 50%, rgba(255,255,255,.82) 82%, transparent);
+      box-shadow: 0 1px 7px rgba(255,255,255,.24);
+    }
+    .topnav > * { position: relative; z-index: 1; }
+    .brand { border-radius: 999px; }
+    .brand img {
+      border: 1px solid rgba(255,255,255,.47) !important;
+      box-shadow: 0 1px 2px rgba(0,0,0,.28), inset 0 1px 0 rgba(255,255,255,.55) !important;
+    }
+    .brand span { color: rgba(255,255,255,.97); text-shadow: 0 1px 8px rgba(0,0,0,.22); }
+    .brand span b { color: #a5f3bd !important; }
+    .nav-link {
+      color: rgba(255,255,255,.78) !important;
+      background: transparent !important;
+      border: 1px solid transparent !important;
+      text-shadow: 0 1px 5px rgba(0,0,0,.2);
+      transition: color .2s ease, background .2s ease, border-color .2s ease, box-shadow .2s ease, transform .2s ease !important;
+    }
+    .nav-link:hover {
+      color: #fff !important;
+      background: rgba(255,255,255,.105) !important;
+      border-color: rgba(255,255,255,.12) !important;
+    }
+    .nav-link.active {
+      color: #fff !important;
+      background: linear-gradient(180deg, rgba(255,255,255,.29), rgba(255,255,255,.105)) !important;
+      border-color: rgba(255,255,255,.24) !important;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.32), inset 0 -1px 0 rgba(0,0,0,.15), 0 2px 8px rgba(0,0,0,.13) !important;
+    }
+    .nav-ico {
+      color: rgba(255,255,255,.91) !important;
+      background: linear-gradient(180deg, rgba(255,255,255,.16), rgba(255,255,255,.055)) !important;
+      border: 1px solid rgba(255,255,255,.18) !important;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.19), 0 2px 7px rgba(0,0,0,.14);
+    }
+    .nav-ico:hover {
+      color: #fff !important;
+      background: linear-gradient(180deg, rgba(255,255,255,.27), rgba(255,255,255,.1)) !important;
+      border-color: rgba(255,255,255,.34) !important;
+      transform: translateY(-1px);
+    }
+    .profile-menu {
+      -webkit-backdrop-filter: blur(32px) saturate(180%);
+      backdrop-filter: blur(32px) saturate(180%);
+      border-color: rgba(255,255,255,.2) !important;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.1), 0 22px 70px rgba(0,0,0,.56) !important;
+    }
+    @media (max-width: 650px) {
+      .topnav-wrap { top: 8px !important; padding: 0 7px !important; }
+      .topnav { max-width: calc(100vw - 14px); padding: 6px 7px !important; gap: 2px !important; }
+      .nav-link { padding: 8px 9px !important; font-size: .74rem !important; }
+      .brand { padding-left: 3px; }
+      .brand img { width: 28px !important; height: 28px !important; }
+    }
+    @media (prefers-reduced-transparency: reduce) {
+      .topnav { background: rgba(15,19,16,.96) !important; -webkit-backdrop-filter:none !important; backdrop-filter:none !important; }
+    }
+
+  </style>
+  <style id="liquid-glass-dock-refinement">
+    /* A restrained, reflective glass capsule inspired by native Apple surfaces. */
+    .topnav-wrap {
+      isolation: isolate;
+      perspective: 900px;
+      transform-origin: top center;
+      transition: transform .38s cubic-bezier(.2,.8,.2,1), opacity .24s ease, visibility .24s ease;
+    }
+    .topnav-wrap .topnav {
+      background:
+        linear-gradient(180deg, rgba(255,255,255,.31) 0%, rgba(255,255,255,.14) 7%, rgba(255,255,255,.035) 31%, rgba(10,14,12,.30) 68%, rgba(7,10,8,.48) 100%),
+        linear-gradient(112deg, rgba(255,255,255,.14) 0%, rgba(255,255,255,.025) 31%, rgba(210,255,224,.055) 67%, rgba(255,255,255,.09) 100%),
+        rgba(22,27,24,.39) !important;
+      border: 1px solid rgba(255,255,255,.42) !important;
+      -webkit-backdrop-filter: blur(42px) saturate(220%) contrast(1.06) brightness(1.06) !important;
+      backdrop-filter: blur(42px) saturate(220%) contrast(1.06) brightness(1.06) !important;
+      box-shadow:
+        inset 0 1px 0 rgba(255,255,255,.72),
+        inset 0 2px 5px rgba(255,255,255,.12),
+        inset 0 -1px 0 rgba(0,0,0,.3),
+        0 1px 2px rgba(255,255,255,.12),
+        0 12px 34px rgba(0,0,0,.26),
+        0 28px 70px rgba(0,0,0,.18) !important;
+    }
+    .topnav-wrap .topnav::before {
+      inset: 1px !important;
+      background:
+        linear-gradient(108deg, rgba(255,255,255,.31) 0%, rgba(255,255,255,.12) 8%, transparent 24%, transparent 47%, rgba(255,255,255,.055) 58%, transparent 72%, rgba(255,255,255,.13) 90%, rgba(255,255,255,.19) 100%),
+        linear-gradient(180deg, rgba(255,255,255,.13), transparent 37%, rgba(0,0,0,.13)) !important;
+      opacity: .94;
+    }
+    .topnav-wrap .topnav::after {
+      left: 8% !important;
+      right: 8% !important;
+      height: 1px !important;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,.9) 18%, rgba(255,255,255,.30) 50%, rgba(255,255,255,.82) 82%, transparent) !important;
+      box-shadow: 0 0 9px rgba(255,255,255,.19) !important;
+    }
+    .topnav-wrap .nav-link {
+      text-shadow: 0 1px 3px rgba(0,0,0,.24) !important;
+    }
+    .topnav-wrap .nav-link.active {
+      background: linear-gradient(180deg, rgba(255,255,255,.34), rgba(255,255,255,.12)) !important;
+      border-color: rgba(255,255,255,.31) !important;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.46), inset 0 -1px 0 rgba(0,0,0,.11), 0 2px 7px rgba(0,0,0,.10) !important;
+      color: #fff !important;
+    }
+    .topnav-wrap .nav-ico {
+      background: linear-gradient(180deg, rgba(255,255,255,.20), rgba(255,255,255,.055)) !important;
+      border-color: rgba(255,255,255,.24) !important;
+    }
+    .topnav-wrap.nav-hidden,
+    .topnav-wrap.context-hidden {
+      visibility: hidden !important;
+    }
+    @media (prefers-reduced-transparency: reduce) {
+      .topnav-wrap .topnav {
+        background: rgba(18,23,20,.96) !important;
+        -webkit-backdrop-filter: none !important;
+        backdrop-filter: none !important;
+      }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .topnav-wrap { transition: none !important; }
+    }
+  </style>
+  <style id="animestream-prismatic-brand-glass">
+    /* Emerald-first liquid prism glass: optical dispersion stays on the glass, not the text. */
+    :root {
+      --prism-brand: #22c55e;
+      --prism-mint: #8cffb0;
+      --prism-cyan: #65f4dd;
+      --prism-blue: #77baff;
+      --prism-violet: #b59aff;
+    }
+    .topnav-wrap .topnav {
+      border: 1px solid transparent !important;
+      background:
+        linear-gradient(118deg, rgba(7,28,15,.76) 0%, rgba(8,20,17,.57) 28%, rgba(10,17,26,.56) 55%, rgba(8,25,14,.72) 100%) padding-box,
+        linear-gradient(108deg,
+          rgba(190,255,207,.98) 0%,
+          rgba(34,197,94,.92) 11%,
+          rgba(101,244,221,.88) 25%,
+          rgba(119,186,255,.76) 42%,
+          rgba(181,154,255,.78) 55%,
+          rgba(255,255,255,.78) 63%,
+          rgba(101,244,221,.78) 74%,
+          rgba(34,197,94,.96) 89%,
+          rgba(190,255,207,.95) 100%) border-box !important;
+      -webkit-backdrop-filter: blur(40px) saturate(245%) contrast(1.18) brightness(1.08) !important;
+      backdrop-filter: blur(40px) saturate(245%) contrast(1.18) brightness(1.08) !important;
+      box-shadow:
+        inset 0 1px 0 rgba(255,255,255,.83),
+        inset 0 2px 9px rgba(255,255,255,.16),
+        inset 0 -1px 0 rgba(0,0,0,.44),
+        inset 0 -9px 24px rgba(2,11,5,.24),
+        0 0 0 1px rgba(34,197,94,.12),
+        0 0 16px rgba(34,197,94,.16),
+        0 0 28px rgba(101,244,221,.09),
+        0 15px 42px rgba(0,0,0,.37) !important;
+    }
+    .topnav-wrap .topnav::before {
+      inset: 1px !important;
+      background:
+        /* The angled colour bands imitate split light travelling through a prism. */
+        linear-gradient(112deg,
+          transparent 0%,
+          rgba(255,255,255,.30) 5%,
+          rgba(140,255,176,.38) 9%,
+          transparent 15%,
+          rgba(101,244,221,.28) 23%,
+          transparent 30%,
+          rgba(119,186,255,.25) 39%,
+          transparent 46%,
+          rgba(181,154,255,.25) 53%,
+          rgba(255,255,255,.13) 58%,
+          transparent 64%,
+          rgba(101,244,221,.20) 73%,
+          transparent 80%,
+          rgba(34,197,94,.29) 89%,
+          rgba(255,255,255,.24) 96%,
+          transparent 100%),
+        linear-gradient(180deg, rgba(255,255,255,.27) 0%, rgba(255,255,255,.06) 16%, transparent 38%, rgba(1,10,4,.13) 75%, rgba(34,197,94,.10) 100%),
+        radial-gradient(ellipse at 18% -45%, rgba(140,255,176,.32), transparent 53%),
+        radial-gradient(ellipse at 84% 140%, rgba(101,244,221,.18), transparent 48%);
+      background-size: 220% 100%, 100% 100%, 100% 100%, 100% 100%;
+      background-position: 0% 0%, 0 0, 0 0, 0 0;
+      opacity: .98 !important;
+      animation: prismLightTravel 10s ease-in-out infinite alternate;
+    }
+    .topnav-wrap .topnav::after {
+      top: 1px !important;
+      left: 7% !important;
+      right: 7% !important;
+      height: 2px !important;
+      background: linear-gradient(90deg,
+        transparent,
+        rgba(140,255,176,.95) 12%,
+        rgba(101,244,221,.95) 30%,
+        rgba(119,186,255,.86) 45%,
+        rgba(181,154,255,.88) 58%,
+        rgba(255,255,255,.96) 66%,
+        rgba(101,244,221,.83) 80%,
+        rgba(34,197,94,.98) 91%,
+        transparent) !important;
+      box-shadow: 0 0 5px rgba(255,255,255,.47), 0 0 12px rgba(101,244,221,.27), 0 1px 14px rgba(34,197,94,.26) !important;
+      opacity: .96;
+    }
+    .topnav-wrap .brand img {
+      border-color: rgba(176,255,194,.76) !important;
+      box-shadow: 0 0 0 1px rgba(34,197,94,.17), 0 0 13px rgba(34,197,94,.23), inset 0 1px 0 rgba(255,255,255,.65) !important;
+    }
+    .topnav-wrap .brand span b {
+      color: var(--prism-mint) !important;
+      text-shadow: 0 0 12px rgba(34,197,94,.42), 0 0 22px rgba(101,244,221,.16) !important;
+    }
+    .topnav-wrap .nav-link {
+      border-color: transparent !important;
+      text-shadow: 0 1px 5px rgba(0,0,0,.48) !important;
+    }
+    .topnav-wrap .nav-link:hover {
+      background: linear-gradient(115deg, rgba(34,197,94,.19), rgba(101,244,221,.10) 48%, rgba(181,154,255,.11)) !important;
+      border-color: rgba(140,255,176,.24) !important;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.22), 0 0 12px rgba(34,197,94,.10) !important;
+    }
+    .topnav-wrap .nav-link.active {
+      color: #eaffef !important;
+      background: linear-gradient(125deg, rgba(34,197,94,.33), rgba(101,244,221,.17) 42%, rgba(119,186,255,.12) 68%, rgba(34,197,94,.19)) !important;
+      border-color: rgba(140,255,176,.48) !important;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.43), inset 0 -1px 0 rgba(34,197,94,.20), 0 0 0 1px rgba(34,197,94,.10), 0 0 15px rgba(34,197,94,.19), 0 0 21px rgba(101,244,221,.08) !important;
+    }
+    .topnav-wrap .nav-ico {
+      color: #dffff0 !important;
+      background: linear-gradient(145deg, rgba(140,255,176,.24), rgba(101,244,221,.10) 42%, rgba(181,154,255,.11) 72%, rgba(34,197,94,.16)) !important;
+      border-color: rgba(140,255,176,.28) !important;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.31), 0 0 10px rgba(34,197,94,.12), 0 3px 9px rgba(0,0,0,.17) !important;
+    }
+    .topnav-wrap .nav-ico:hover {
+      background: linear-gradient(145deg, rgba(140,255,176,.34), rgba(101,244,221,.18) 42%, rgba(181,154,255,.16) 72%, rgba(34,197,94,.24)) !important;
+      border-color: rgba(190,255,207,.61) !important;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.43), 0 0 15px rgba(34,197,94,.23) !important;
+    }
+    @keyframes prismLightTravel {
+      0% { background-position: 0% 0%, 0 0, 0 0, 0 0; filter: hue-rotate(-4deg); }
+      48% { background-position: 48% 0%, 0 0, 0 0, 0 0; }
+      100% { background-position: 100% 0%, 0 0, 0 0, 0 0; filter: hue-rotate(4deg); }
+    }
+    @media (hover:hover) {
+      .topnav-wrap .topnav { transition: box-shadow .28s ease, border-color .28s ease, filter .28s ease; }
+      .topnav-wrap .topnav:hover {
+        box-shadow: inset 0 1px 0 rgba(255,255,255,.9), inset 0 2px 10px rgba(255,255,255,.17), inset 0 -1px 0 rgba(0,0,0,.4), 0 0 0 1px rgba(34,197,94,.17), 0 0 23px rgba(34,197,94,.20), 0 0 36px rgba(101,244,221,.11), 0 18px 48px rgba(0,0,0,.4) !important;
+        filter: saturate(1.08) brightness(1.035);
+      }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .topnav-wrap .topnav::before { animation: none !important; }
+    }
+    @media (prefers-reduced-transparency: reduce) {
+      .topnav-wrap .topnav {
+        background: linear-gradient(120deg, #0b2414, #101a18 47%, #0a2012) padding-box, linear-gradient(100deg, #8cffb0, #65f4dd, #77baff, #b59aff, #22c55e) border-box !important;
+        -webkit-backdrop-filter: none !important;
+        backdrop-filter: none !important;
+      }
+    }
   </style>
 </head>
 <body>
@@ -853,19 +1186,21 @@ const TVMAZE = 'https://api.tvmaze.com';
 const CINEMETA = 'https://v3-cinemeta.strem.io';
 const $ = id => document.getElementById(id);
 
+// Preferred servers are intentionally first. The player uses this order for its
+// initial load and for timeout-based retries; viewers can still choose any server.
 const MOVIE_SERVERS = [
+  { name: 'VidSpark', url: m => `https://vidspark.to/movie/${m.imdb || m.tmdb}` },
   { name: 'VidSrc', url: m => m.embed || `https://vid-src.top/embed/movie/${m.imdb || m.tmdb}` },
   { name: 'VidSrc Link', url: m => `https://vidsrc.link/embed/movie/${m.imdb || m.tmdb}` },
   { name: 'VidSrc PM', url: m => `https://vidsrc.pm/embed/movie/${m.imdb || m.tmdb}` },
   { name: 'Videasy', url: m => `https://player.videasy.to/movie/${m.imdb || m.tmdb}` },
-  { name: 'VidSpark', url: m => `https://vidspark.to/movie/${m.imdb || m.tmdb}` },
 ];
 const TV_SERVERS = [
+  { name: 'VidSpark', url: (id,s,e) => `https://vidspark.to/tv/${id}/${s}/${e}` },
   { name: 'VidSrc', url: (id,s,e) => `https://vid-src.top/embed/tv/${id}/${s}/${e}` },
   { name: 'VidSrc Link', url: (id,s,e) => `https://vidsrc.link/embed/tv/${id}/${s}/${e}` },
   { name: 'VidSrc PM', url: (id,s,e) => `https://vidsrc.pm/embed/tv/${id}/${s}/${e}` },
   { name: 'Videasy', url: (id,s,e) => `https://player.videasy.to/tv/${id}/${s}/${e}` },
-  { name: 'VidSpark', url: (id,s,e) => `https://vidspark.to/tv/${id}/${s}/${e}` },
 ];
 
 const ANIME_SERVERS = [
@@ -1152,10 +1487,27 @@ function scrollRow(id, dir) {
   if (el) el.scrollBy({ left: dir * Math.min(el.clientWidth * 0.8, 600), behavior: 'smooth' });
 }
 
+let currentScreenId = 'homeView';
+function shouldHideTopNavForContext(screenId = currentScreenId) {
+  const searchOpen = $('searchOverlay')?.classList.contains('show');
+  const adOpen = $('vastAdOverlay')?.classList.contains('is-visible');
+  // Dedicated immersive surfaces already provide their own navigation or controls.
+  // Keep the dock off the player, item-detail hero, full-screen Search, and ad overlay.
+  return screenId === 'playerView' || screenId === 'detailView' || Boolean(searchOpen) || Boolean(adOpen);
+}
+function syncTopNavContext(screenId = currentScreenId) {
+  const wrap = document.querySelector('.topnav-wrap');
+  if (!wrap) return;
+  const hideForContext = shouldHideTopNavForContext(screenId);
+  wrap.classList.toggle('context-hidden', hideForContext);
+  if (hideForContext) wrap.classList.remove('nav-hidden');
+  else if ((window.scrollY || 0) < 38) wrap.classList.remove('nav-hidden');
+}
 function setNav(mode) {
   document.querySelectorAll('.nav-link').forEach(el => el.classList.toggle('active', el.dataset.nav === mode));
 }
 function showPage(id) {
+  currentScreenId = id;
   ['homeView', 'browseView', 'playerView', 'detailView', 'myListView', 'continueView'].forEach(pid => {
     const el = $(pid);
     if (!el) return;
@@ -1169,6 +1521,7 @@ function showPage(id) {
   });
   if (id !== 'playerView') $('player').src = '';
   window.scrollTo({ top: 0, behavior: 'smooth' });
+  syncTopNavContext(id);
 }
 
 /* In-app history. Each screen is a history entry, and a guard entry is
@@ -1346,11 +1699,12 @@ function renderTrending() {
   const items = heroItems.slice(0, 5);
   if (!items.length) { list.innerHTML = '<div class="state">Trending titles will appear here.</div>'; return; }
   list.innerHTML = items.map((h, i) => {
-    const poster = h.backdrop || '';
+    const poster = posterSrc(heroMediaRecord(h)) || h.backdrop || '';
+    const posterList = posterCandidates(heroMediaRecord(h)).filter(u => u !== poster);
     const meta = h.type === 'anime' ? 'Anime' : h.type === 'tv' ? 'Series' : 'Movie';
     return `<button class="trend-item" type="button" data-trend-index="${i}" aria-label="Open ${String(h.title).replace(/"/g,'&quot;')}">
       <span class="trend-rank">${String(i + 1).padStart(2,'0')}</span>
-      <img class="trend-poster" src="${poster}" alt="" loading="lazy" onerror="this.style.visibility='hidden'">
+      <img class="trend-poster" src="${escAttr(poster)}" data-poster-fallback="${escAttr(JSON.stringify(posterList))}" alt="" loading="lazy" decoding="async" onerror="handlePosterError(this)">
       <span><span class="trend-name">${h.title}</span><span class="trend-meta">${meta}${h.year ? ' · ' + h.year : ''}${h.score ? ' · ★ ' + Number(h.score).toFixed(1) : ''}</span></span>
     </button>`;
   }).join('');
@@ -1366,12 +1720,54 @@ function renderTrending() {
   }));
 }
 
+// Artwork fallback: race a small set of image candidates and use the first one that loads.
+// This keeps banners visible even when a catalog provider's preferred backdrop is unavailable.
+const artworkTokens = new WeakMap();
+function setFirstAvailableArtwork(element, urls, applyUrl, timeoutMs = 6500) {
+  if (!element) return;
+  const token = (artworkTokens.get(element) || 0) + 1;
+  artworkTokens.set(element, token);
+  const candidates = [...new Set((urls || []).filter(u => { const v = typeof u === 'string' ? u.trim() : ''; return /^https?:\/\//i.test(v) || (v.startsWith('/') && !v.startsWith('//')); }).map(u => u.trim()))].slice(0, 8);
+  if (!candidates.length) { applyUrl(''); return; }
+  let done = false, failed = 0;
+  const finish = url => {
+    if (done) return;
+    done = true;
+    clearTimeout(timer);
+    if (artworkTokens.get(element) === token) applyUrl(url || '');
+  };
+  const timer = setTimeout(() => finish(''), timeoutMs);
+  candidates.forEach(url => {
+    const image = new Image();
+    image.decoding = 'async';
+    image.onload = () => finish(url);
+    image.onerror = () => { failed++; if (failed === candidates.length) finish(''); };
+    image.src = url;
+  });
+}
+function uniqueArtworkUrls(urls) { return [...new Set((urls || []).filter(v => typeof v === 'string' && v.trim()))]; }
+function heroMediaRecord(h) {
+  if (!h) return {};
+  if (h.raw) return { ...h.raw, _type: 'anime', _poster: h.raw._poster || h.raw.coverImage?.extraLarge || h.raw.coverImage?.large || '', _backdrop: h.raw.bannerImage || h.backdrop || '' };
+  if (h.type === 'movie') return movieCache.find(m => (h.imdb && m.imdb === h.imdb) || (h.tmdb && String(m.tmdb) === String(h.tmdb))) || { _type:'movie', imdb:h.imdb, tmdb:h.tmdb, _title:h.title, _poster:h.poster || '', _backdrop:h.backdrop || '' };
+  return seriesCache.find(s => (h.imdb && s.imdb === h.imdb) || (h.tvmaze && String(s.tvmaze) === String(h.tvmaze))) || { _type:'tv', imdb:h.imdb, tvmaze:h.tvmaze, _title:h.title, _poster:h.poster || '', _backdrop:h.backdrop || '' };
+}
+function heroArtworkCandidates(h) {
+  const item = heroMediaRecord(h);
+  const metaBackdrop = h?.imdb ? `https://images.metahub.space/background/medium/${h.imdb}/img` : '';
+  return uniqueArtworkUrls([h?.backdrop, item.bannerImage, item._backdrop, metaBackdrop, ...posterCandidates(item)]).slice(0, 8);
+}
+
 function renderHero(i) {
   if (!heroItems.length) return;
   heroIdx = ((i % heroItems.length) + heroItems.length) % heroItems.length;
   const h = heroItems[heroIdx];
-  if (h.backdrop) $('hero').style.backgroundImage = `linear-gradient(90deg,rgba(0,0,0,.84),rgba(0,0,0,.35) 55%,rgba(0,0,0,.02)),linear-gradient(0deg,#080b09,transparent 58%),url("${String(h.backdrop).replace(/"/g,'%22')}")`;
-  else $('hero').style.backgroundImage = 'linear-gradient(90deg,rgba(0,0,0,.84),rgba(0,0,0,.35) 55%,rgba(0,0,0,.02)),linear-gradient(0deg,#080b09,transparent 58%)';
+  const hero = $('hero');
+  const heroOverlay = 'linear-gradient(90deg,rgba(0,0,0,.84),rgba(0,0,0,.35) 55%,rgba(0,0,0,.02)),linear-gradient(0deg,#080b09,transparent 58%)';
+  hero.style.backgroundImage = heroOverlay;
+  setFirstAvailableArtwork(hero, heroArtworkCandidates(h), url => {
+    hero.style.backgroundImage = url ? `${heroOverlay},url("${String(url).replace(/"/g,'%22')}")` : heroOverlay;
+  });
   $('heroTitle').textContent = h.title;
   $('heroDesc').textContent = h.desc || '';
   const badges = [];
@@ -1443,9 +1839,18 @@ function refreshBrowseHeader(isLoading=false) {
   const count = $('browseCount');
   if (count) count.innerHTML = isLoading ? '<i class="ri-loader-4-line" aria-hidden="true"></i> Loading titles' : `<i class="ri-film-line" aria-hidden="true"></i> ${browseItems.length || 0} title${browseItems.length===1?'':'s'} loaded`;
   const expectedType = browseMode === 'movies' ? 'movie' : browseMode === 'series' ? 'tv' : 'anime';
-  const source = (browseItems || []).find(m => (m._type || m.type || 'anime') === expectedType && (m.bannerImage || m._backdrop || m.imdb || m._poster || m.coverImage));
-  let image = source && (browseMode === 'anime' ? (source.bannerImage || source._backdrop || source._poster || source.coverImage?.large) : (source._backdrop || (source.imdb ? `https://images.metahub.space/background/medium/${source.imdb}/img` : '') || source.bannerImage || source._poster || posterSrc(source)));
-  $('browseHero').style.setProperty('--browse-image', image ? `url("${String(image).replace(/"/g,'%22')}")` : 'none');
+  const pool = [...(browseItems || []), ...(browseMode === 'movies' ? [...movieCache, ...(homeCollections.moviesPop || []), ...(homeCollections.moviesNew || [])] : browseMode === 'series' ? [...seriesCache, ...(homeCollections.series || [])] : [...(homeCollections.animeTrend || []), ...(homeCollections.animePop || [])]), ...Array.from(mediaRegistry.values())];
+  const candidates = [];
+  for (const item of pool) {
+    if ((item._type || item.type || 'anime') !== expectedType) continue;
+    const imdb = item.imdb && String(item.imdb).startsWith('tt') ? item.imdb : '';
+    candidates.push(item.bannerImage, item._backdrop, imdb ? `https://images.metahub.space/background/medium/${imdb}/img` : '', ...posterCandidates(item));
+    if (candidates.filter(Boolean).length >= 12) break;
+  }
+  const browseHero = $('browseHero');
+  setFirstAvailableArtwork(browseHero, uniqueArtworkUrls(candidates), image => {
+    browseHero.style.setProperty('--browse-image', image ? `url("${String(image).replace(/"/g,'%22')}")` : 'none');
+  });
 }
 function sortBrowse(mode) {
   const items = [...browseItems];
@@ -1465,9 +1870,12 @@ function surpriseMe() {
   openDetails(pool[Math.floor(Math.random() * pool.length)]);
 }
 function setCollectionArt(items) {
-  const item = (items || []).find(m => m.bannerImage || m._backdrop || m.imdb || m._poster);
-  let image = item && (item.bannerImage || item._backdrop || (item.imdb ? `https://images.metahub.space/background/medium/${item.imdb}/img` : '') || item._poster || posterSrc(item));
-  document.querySelectorAll('.collection-hero').forEach(el => el.style.setProperty('--collection-image', image ? `url("${String(image).replace(/"/g,'%22')}")` : 'none'));
+  const urls = [];
+  for (const item of (items || []).slice(0, 8)) {
+    const imdb = item.imdb && String(item.imdb).startsWith('tt') ? item.imdb : '';
+    urls.push(item.bannerImage, item._backdrop, imdb ? `https://images.metahub.space/background/medium/${imdb}/img` : '', ...posterCandidates(item));
+  }
+  document.querySelectorAll('.collection-hero').forEach(el => setFirstAvailableArtwork(el, uniqueArtworkUrls(urls), image => el.style.setProperty('--collection-image', image ? `url("${String(image).replace(/"/g,'%22')}")` : 'none')));
 }
 
 async function loadBrowse(reset, requestId = browseRequestId) {
@@ -1625,13 +2033,14 @@ function openSearch() {
   $('searchOverlay').classList.add('show');
   $('searchInput').value = '';
   renderSearchDiscovery();
-  document.querySelector('.topnav-wrap')?.classList.remove('nav-hidden');
+  syncTopNavContext();
   setTimeout(() => $('searchInput').focus(), 40);
 }
 function closeSearch() {
   $('searchOverlay').classList.remove('show');
   $('searchInput').value = '';
   clearTimeout(searchTimer);
+  syncTopNavContext();
 }
 function searchFor(q) {
   $('searchInput').value = q;
@@ -1718,6 +2127,7 @@ async function fetchVastCreative(url, depth=0){
   return {media:media[0],trackers,click:click?vastResolveUrl(url,click):'',duration:vastText(linear,'Duration')};
 }
 function vastParseDuration(value){const m=(value||'').match(/^(\d+):([0-5]\d):([0-5]\d)(?:\.(\d+))?$/);return m?Number(m[1])*3600+Number(m[2])*60+Number(m[3]):0;}
+let vastCurrentReason = 'preroll';
 function vastFinishAd(){
   if(!vastAdActive)return;
   vastAdActive=false;
@@ -1725,15 +2135,19 @@ function vastFinishAd(){
   video.removeAttribute('src'); video.load();
   $('vastAdOverlay').classList.remove('is-visible');
   $('vastAdClick').classList.remove('is-active'); $('vastAdClick').removeAttribute('href');
-  $('player').src=vastPendingUrl;
+  // Pre-roll stream is already loaded behind the overlay; do not restart its navigation.
+  // Mid-roll keeps its previous pause/resume behavior.
+  if(vastCurrentReason === 'midroll' && vastPendingUrl) $('player').src=vastPendingUrl;
   vastViewSeconds=0; vastNextMidroll=randomMidrollSeconds();
   vastLastActivity=Date.now();
 }
 async function runVastAd(reason){
   if(vastAdActive || !vastPendingUrl)return;
-  const token=++vastSessionToken; vastAdActive=true;
+  const token=++vastSessionToken; vastAdActive=true; vastCurrentReason=reason;
   const overlay=$('vastAdOverlay'), video=$('vastAdVideo'), close=$('vastAdClose');
-  $('player').src='about:blank';
+  // During pre-roll the stream must keep loading behind the ad. Mid-roll temporarily
+  // blanks it to avoid continuing audio beneath the ad, matching the existing behavior.
+  if(reason === 'midroll') $('player').src='about:blank';
   overlay.classList.add('is-visible'); $('vastAdLabel').textContent=reason==='preroll'?'Advertisement · Before your show':'Advertisement · Mid-roll';
   $('vastAdStatus').textContent='Loading advertisement…'; close.disabled=true; close.textContent='Ad playing';
   try{
@@ -1759,12 +2173,77 @@ async function runVastAd(reason){
 }
 let vastTrackedEvents=new Set();
 function vastTrackOnce(name){if(vastTrackedEvents.has(name))return;vastTrackedEvents.add(name);vastTrack(name);}
+let playbackQueue = [], playbackQueueIndex = 0, playbackToken = 0, playbackTimer = null, playbackCurrentUrl = '';
+function normalizeStreamUrl(url) { return String(url || '').replace(/^http:\/\//i, 'https://'); }
+function getCurrentServerAttempts(firstUrl) {
+  const entries = [];
+  if (current?.type === 'movie') {
+    MOVIE_SERVERS.forEach((server, index) => entries.push({index, url: server.url(current)}));
+  } else if (current?.type === 'tv') {
+    const list = current.seasons?.[season] || [];
+    const episode = list[epIndex]?.number || epIndex + 1;
+    const id = current.imdb || current.tmdb || current.id;
+    if (id) TV_SERVERS.forEach((server, index) => entries.push({index, url: server.url(id, season, episode)}));
+  } else if (current?.type === 'anime') {
+    const episode = epIndex + 1;
+    ANIME_SERVERS.forEach((server, index) => entries.push({index, url: server.url(current, episode, lang)}));
+  }
+  const normalizedFirst = normalizeStreamUrl(firstUrl);
+  const startIndex = Math.max(0, entries.findIndex(e => normalizeStreamUrl(e.url) === normalizedFirst));
+  const ordered = [{ index: entries[startIndex]?.index ?? serverIdx, url: normalizedFirst }];
+  for (let step = 1; step <= entries.length; step++) {
+    const entry = entries[(startIndex + step) % entries.length];
+    if (!entry?.url) continue;
+    const normalized = normalizeStreamUrl(entry.url);
+    if (normalized && !ordered.some(x => x.url === normalized)) ordered.push({ index: entry.index, url: normalized });
+  }
+  return ordered;
+}
+function updateActiveServer(index) {
+  if (!Number.isInteger(index)) return;
+  serverIdx = index;
+  document.querySelectorAll('.server-btn').forEach((el, idx) => el.classList.toggle('active', idx === index));
+}
+function tryPlaybackAttempt(token) {
+  if (token !== playbackToken || !playbackQueue.length) return;
+  clearTimeout(playbackTimer);
+  if (playbackQueueIndex >= playbackQueue.length) {
+    const meta = $('mediaMeta');
+    if (meta && !meta.textContent.includes('Try another server')) meta.textContent += ' · Could not confirm a server response. Select another server to retry.';
+    return;
+  }
+  const attempt = playbackQueue[playbackQueueIndex];
+  playbackCurrentUrl = attempt.url;
+  vastPendingUrl = attempt.url;
+  updateActiveServer(attempt.index);
+  $('player').src = attempt.url;
+  // Cross-origin embeds don't expose playable/error state, so only retry when navigation itself stalls.
+  playbackTimer = setTimeout(() => {
+    if (token !== playbackToken || playbackCurrentUrl !== attempt.url) return;
+    playbackQueueIndex++;
+    if (playbackQueueIndex < playbackQueue.length) tryPlaybackAttempt(token);
+    else {
+      const meta = $('mediaMeta');
+      if (meta && !meta.textContent.includes('Try another server')) meta.textContent += ' · Servers did not respond in time. Tap a server to retry.';
+    }
+  }, 9000);
+}
+$('player')?.addEventListener('load', () => {
+  if (!$('player') || $('player').src !== playbackCurrentUrl) return;
+  clearTimeout(playbackTimer);
+});
 function playNow(url) {
   if (!url) return;
-  const normalized = url.replace(/^http:\/\//, 'https://');
-  vastPendingUrl = normalized;
+  playbackToken++;
+  clearTimeout(playbackTimer);
+  playbackQueue = getCurrentServerAttempts(url);
+  playbackQueueIndex = 0;
+  if (!playbackQueue.length) playbackQueue = [{ index: serverIdx, url: normalizeStreamUrl(url) }];
+  vastPendingUrl = normalizeStreamUrl(url);
   vastTrackedEvents = new Set();
   if (vastAdActive) { vastSessionToken++; try{$('vastAdVideo').pause();}catch(_){} vastAdActive=false; $('vastAdOverlay').classList.remove('is-visible'); }
+  // Start loading the chosen stream immediately; the pre-roll overlay sits above the iframe.
+  tryPlaybackAttempt(playbackToken);
   runVastAd('preroll');
 }
 // Count only active time while the player page is visible and the viewer has interacted recently.
@@ -1785,7 +2264,7 @@ function renderServers(list) {
   }
   $('serverLabel').style.display = 'block';
   $('serverRow').innerHTML = list.map((s, i) =>
-    `<button class="server-btn ${i === serverIdx ? 'active' : ''}" onclick="setServer(${i})">${s.name}</button>`
+    `<button class="server-btn ${i === serverIdx ? 'active' : ''}" onclick="setServer(${i})" title="${i === 0 ? 'Preferred starting server' : 'Switch to this server'}">${s.name}${i === 0 ? ' · Main' : ''}</button>`
   ).join('');
 }
 function setServer(i) {
@@ -2016,8 +2495,9 @@ function openDetails(item, silent=false) {
   closeSearch(); toggleProfileMenu(true); setNav('');
   const m=activeDetail, title=m._title || 'Untitled';
   const poster=posterSrc(m) || m._poster || '';
-  const backdrop=m.bannerImage || m._backdrop || (m.imdb ? `https://images.metahub.space/background/medium/${m.imdb}/img` : '') || m._poster || posterSrc(m) || '';
-  $('detailHero').style.setProperty('--detail-image', backdrop ? `url("${String(backdrop).replace(/"/g,'%22')}")` : 'none');
+  const detailCandidates = uniqueArtworkUrls([m.bannerImage, m._backdrop, m.imdb && String(m.imdb).startsWith('tt') ? `https://images.metahub.space/background/medium/${m.imdb}/img` : '', ...posterCandidates(m)]);
+  $('detailHero').style.setProperty('--detail-image', 'none');
+  setFirstAvailableArtwork($('detailHero'), detailCandidates, image => $('detailHero').style.setProperty('--detail-image', image ? `url("${String(image).replace(/"/g,'%22')}")` : 'none'));
   $('detailKicker').textContent=m._type==='anime'?'ANIME DISCOVERY':m._type==='tv'?'SERIES SPOTLIGHT':'MOVIE SPOTLIGHT';
   $('detailTitle').textContent=title;
   const year=m.seasonYear || (m.premiered||'').slice(0,4) || '';
@@ -2095,23 +2575,42 @@ updateSavedCount();
 loadHome();
 seedHistory();
 
-// Intelligent nav behavior: tuck away on downward scroll, reappear on upward scroll/top edge.
+// Context-aware liquid-glass dock: auto-hide on scroll down, reveal on scroll up/top edge,
+// but never cover the video controls/player screen or the dedicated Search surface.
 (function setupSmartGlassNav(){
   const wrap=document.querySelector('.topnav-wrap');
   if(!wrap) return;
   let lastY=window.scrollY||0, busy=false;
-  const forceVisible=()=> $('searchOverlay')?.classList.contains('show') || $('profileMenu')?.classList.contains('open') || document.activeElement?.closest?.('.topnav');
+  const contextMustHide=()=> shouldHideTopNavForContext(currentScreenId);
+  const forceVisible=()=> $('profileMenu')?.classList.contains('open') || document.activeElement?.closest?.('.topnav');
   function update(){
     const y=window.scrollY||0;
-    if(y<38 || forceVisible()) wrap.classList.remove('nav-hidden');
-    else if(y>lastY+7) wrap.classList.add('nav-hidden');
-    else if(y<lastY-5) wrap.classList.remove('nav-hidden');
+    if(contextMustHide()) {
+      wrap.classList.add('context-hidden');
+      wrap.classList.remove('nav-hidden');
+    } else {
+      wrap.classList.remove('context-hidden');
+      if(y<38 || forceVisible()) wrap.classList.remove('nav-hidden');
+      else if(y>lastY+7) wrap.classList.add('nav-hidden');
+      else if(y<lastY-5) wrap.classList.remove('nav-hidden');
+    }
     lastY=y;busy=false;
   }
   window.addEventListener('scroll',()=>{if(!busy){busy=true;requestAnimationFrame(update);}},{passive:true});
-  document.addEventListener('pointermove',e=>{if(e.clientY<48)wrap.classList.remove('nav-hidden');},{passive:true});
-  document.addEventListener('keydown',e=>{if(e.key==='Escape')wrap.classList.remove('nav-hidden');});
-  document.addEventListener('focusin',e=>{if(e.target.closest('.topnav')||e.target.closest('#searchOverlay'))wrap.classList.remove('nav-hidden');});
+  const adLayer=$('vastAdOverlay');
+  if(adLayer && 'MutationObserver' in window){
+    new MutationObserver(()=>{ syncTopNavContext(); update(); }).observe(adLayer,{attributes:true,attributeFilter:['class','style']});
+  }
+  document.addEventListener('pointermove',e=>{
+    if(e.clientY<42 && !contextMustHide()) wrap.classList.remove('nav-hidden');
+  },{passive:true});
+  document.addEventListener('keydown',e=>{
+    if(e.key==='Escape' && !contextMustHide()) wrap.classList.remove('nav-hidden');
+  });
+  document.addEventListener('focusin',e=>{
+    if((e.target.closest('.topnav') || e.target.closest('#searchOverlay')) && !contextMustHide()) wrap.classList.remove('nav-hidden');
+  });
+  syncTopNavContext();
 })();
 </script>
 </body>
