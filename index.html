@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -898,15 +897,45 @@ let mediaRegistryCounter = 0;
 let activeDetail = null;
 let listFilter = 'all';
 
+const CATALOG_CACHE_TTL = 15 * 60 * 1000;
+const catalogInFlight = new Map();
+function readCatalogCache(key) {
+  try { const raw = localStorage.getItem('animestream.catalog.v1:' + key); return raw ? JSON.parse(raw) : null; }
+  catch (_) { return null; }
+}
+function writeCatalogCache(key, value) {
+  try { localStorage.setItem('animestream.catalog.v1:' + key, JSON.stringify({ savedAt: Date.now(), value })); }
+  catch (_) { /* Storage can be unavailable or full; network loading still works. */ }
+}
+async function cachedCatalog(key, loader, ttl = CATALOG_CACHE_TTL) {
+  const cached = readCatalogCache(key);
+  if (cached && Array.isArray(cached.value) || cached && cached.value && typeof cached.value === 'object') {
+    if (Date.now() - cached.savedAt < ttl) return cached.value;
+    // Stale-while-revalidate: show the last good catalog immediately and refresh for next visit.
+    if (!catalogInFlight.has(key)) {
+      const refresh = Promise.resolve().then(loader).then(value => { writeCatalogCache(key, value); return value; }).catch(() => cached.value).finally(() => catalogInFlight.delete(key));
+      catalogInFlight.set(key, refresh);
+    }
+    return cached.value;
+  }
+  if (catalogInFlight.has(key)) return catalogInFlight.get(key);
+  const request = Promise.resolve().then(loader).then(value => { writeCatalogCache(key, value); return value; }).finally(() => catalogInFlight.delete(key));
+  catalogInFlight.set(key, request);
+  return request;
+}
 async function anilist(query, variables = {}) {
-  const res = await fetch(ANILIST, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-    body: JSON.stringify({ query, variables })
+  const key = 'anilist:' + query + ':' + JSON.stringify(variables);
+  return cachedCatalog(key, async () => {
+    const res = await fetch(ANILIST, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+      body: JSON.stringify({ query, variables })
+    });
+    if (!res.ok) throw new Error('AniList ' + res.status);
+    const json = await res.json();
+    if (json.errors) throw new Error(json.errors[0]?.message || 'AniList error');
+    return json.data;
   });
-  const json = await res.json();
-  if (json.errors) throw new Error(json.errors[0]?.message || 'AniList error');
-  return json.data;
 }
 
 const Q_ANIME_TREND = `query($page:Int){Page(page:$page,perPage:24){pageInfo{hasNextPage} media(type:ANIME,sort:TRENDING_DESC,isAdult:false){id idMal title{romaji english} coverImage{large extraLarge} bannerImage averageScore genres episodes seasonYear description(asHtml:false)}}}`;
@@ -960,10 +989,12 @@ async function fetchCinemetaMovies(extra = '') {
   const path = extra
     ? `${CINEMETA}/catalog/movie/top/${extra}.json`
     : `${CINEMETA}/catalog/movie/top.json`;
-  const res = await fetch(path);
-  if (!res.ok) throw new Error('Movie catalog ' + res.status);
-  const data = await res.json();
-  return (data.metas || []).map(mapCinemetaMovie).filter(m => m.imdb);
+  return cachedCatalog('cinemeta:' + path, async () => {
+    const res = await fetch(path);
+    if (!res.ok) throw new Error('Movie catalog ' + res.status);
+    const data = await res.json();
+    return (data.metas || []).map(mapCinemetaMovie).filter(m => m.imdb);
+  });
 }
 async function fetchNewMovies(page = 1) {
   // The original New Movies feed depends on the upstream VidSrc catalog. When that feed is empty or unavailable,
@@ -1004,12 +1035,14 @@ async function fetchVidTv(page = 1) {
   }));
 }
 async function fetchTvmazePopular() {
-  const pages = await Promise.all([0, 1, 2].map(p =>
-    fetch(`${TVMAZE}/shows?page=${p}`).then(r => r.json()).catch(() => [])
-  ));
-  const all = pages.flat();
-  all.sort((a, b) => (b.rating?.average || 0) - (a.rating?.average || 0));
-  return all.filter(s => s.externals?.imdb).slice(0, 60).map(mapTvmaze);
+  return cachedCatalog('tvmaze:popular-shows', async () => {
+    const pages = await Promise.all([0, 1, 2].map(p =>
+      fetch(`${TVMAZE}/shows?page=${p}`).then(r => { if (!r.ok) throw new Error('TV catalog ' + r.status); return r.json(); }).catch(() => [])
+    ));
+    const all = pages.flat();
+    all.sort((a, b) => (b.rating?.average || 0) - (a.rating?.average || 0));
+    return all.filter(s => s.externals?.imdb).slice(0, 60).map(mapTvmaze);
+  });
 }
 async function searchTvmaze(q) {
   const res = await fetch(`${TVMAZE}/search/shows?q=${encodeURIComponent(q)}`);
@@ -1232,62 +1265,79 @@ function nav(mode, genre, silent) {
 }
 
 async function loadHome() {
-  $('homeRows').innerHTML = '<div class="state">Loading…</div>';
-  const [animeTrend, animePop, moviesNew, moviesPop, movAction, movComedy, movAni, movAdv, series, romance, action, comedy] = await Promise.all([
-    anilist(Q_ANIME_TREND, { page: 1 }).then(d => (d.Page.media || []).map(mapAnime)).catch(() => []),
-    anilist(Q_ANIME_POP, { page: 1 }).then(d => (d.Page.media || []).map(mapAnime)).catch(() => []),
-    fetchNewMovies(1).catch(e => { console.warn(e); return []; }),
-    fetchCinemetaMovies().catch(() => []),
-    fetchCinemetaMovies('genre=Action').catch(() => []),
-    fetchCinemetaMovies('genre=Comedy').catch(() => []),
-    fetchCinemetaMovies('genre=Animation').catch(() => []),
-    fetchCinemetaMovies('genre=Adventure').catch(() => []),
-    fetchTvmazePopular().catch(() => []),
-    anilist(Q_ANIME_GENRE, { page: 1, genre: 'Romance' }).then(d => (d.Page.media || []).map(mapAnime)).catch(() => []),
-    anilist(Q_ANIME_GENRE, { page: 1, genre: 'Action' }).then(d => (d.Page.media || []).map(mapAnime)).catch(() => []),
-    anilist(Q_ANIME_GENRE, { page: 1, genre: 'Comedy' }).then(d => (d.Page.media || []).map(mapAnime)).catch(() => []),
-  ]);
-  movieCache = moviesNew;
-  seriesCache = series;
+  const rowsEl = $('homeRows');
+  rowsEl.innerHTML = '<div class="state">Loading your first picks…</div>';
+  // Paint the homepage after the three most useful feeds arrive; don't hold the whole page
+  // hostage while every genre catalog finishes loading.
+  const state = { animeTrend: [], animePop: [], moviesNew: [], moviesPop: [], movAction: [], movComedy: [], movAni: [], movAdv: [], series: [], romance: [], action: [], comedy: [] };
+  const paintRows = () => {
+    let html = '';
+    const recent = getContinueList();
+    if (recent.length) html += rowHTML('Continue <em>Watching</em>', recent, null, 'continueRow');
+    if (state.moviesNew.length) html += rowHTML('New <em>Movies</em>', state.moviesNew.slice(0,24), 'movies', 'rowMovies', 'New');
+    if (state.moviesPop.length) html += rowHTML('Popular <em>Movies</em>', state.moviesPop.slice(0,24), 'movies', 'rowMoviesPop', 'Popular');
+    if (state.movAction.length) html += rowHTML('Action <em>Movies</em>', state.movAction.slice(0,24), 'movies', 'rowMovAction', 'Action');
+    if (state.movComedy.length) html += rowHTML('Comedy <em>Movies</em>', state.movComedy.slice(0,24), 'movies', 'rowMovComedy', 'Comedy');
+    if (state.movAni.length) html += rowHTML('Animation <em>Movies</em>', state.movAni.slice(0,24), 'movies', 'rowMovAni', 'Animation');
+    if (state.movAdv.length) html += rowHTML('Adventure <em>Movies</em>', state.movAdv.slice(0,24), 'movies', 'rowMovAdv', 'Adventure');
+    if (state.series.length) html += rowHTML('Trending Series <em>This Week</em>', state.series.slice(0,24), 'series', 'rowSeries', 'Popular');
+    if (state.animeTrend.length) html += rowHTML('Trending <em>Anime</em>', state.animeTrend, 'genre', 'rowAnime', 'Trending');
+    if (state.action.length) html += rowHTML('Action <em>Anime</em>', state.action, 'genre', 'rowAction', 'Action');
+    if (state.romance.length) html += rowHTML('Romance <em>Anime</em>', state.romance, 'genre', 'rowRomance', 'Romance');
+    if (state.comedy.length) html += rowHTML('Comedy <em>Anime</em>', state.comedy, 'genre', 'rowComedy', 'Comedy');
+    if (state.animePop.length) html += rowHTML('Popular <em>Anime</em>', state.animePop, 'genre', 'rowAnimePop', 'Popular');
+    rowsEl.innerHTML = html || '<div class="state">Could not load content. Please try again.</div>';
+    if ($('searchOverlay')?.classList.contains('show') && !$('searchInput').value.trim()) renderSearchDiscovery();
+  };
+  const toAnime = q => anilist(q.query, q.variables).then(d => (d.Page.media || []).map(mapAnime)).catch(() => []);
+  let heroStarted = false;
+  const updateCoreUI = () => {
+    heroItems = [
+      ...state.moviesPop.slice(0,4).map(m => ({ type:'movie', tmdb:m.tmdb, imdb:m.imdb, title:m._title, backdrop:m._backdrop||m._poster, desc:m.summary||'Pick another server below the player if the first one is blank', score:null, year:'' })),
+      ...state.series.slice(0,3).map(s => ({ type:'tv', imdb:s.imdb, tvmaze:s.tvmaze, title:s._title, backdrop:s._backdrop||s._poster, desc:s.summary, score:null, year:(s.premiered||'').slice(0,4) })),
+      ...state.animeTrend.slice(0,3).map(m => ({ type:'anime', id:m.id, mal:m.idMal, title:m._title, raw:m, backdrop:m.bannerImage||m._poster, desc:stripHtml(m.description), score:m.averageScore?m.averageScore/10:null, year:m.seasonYear, episodes:m.episodes }))
+    ].filter(h => h.title);
+    if (heroItems.length) {
+      renderHero(0); renderTrending();
+      if (!heroStarted) { startHeroRotate(); heroStarted = true; }
+    }
+    homeCollections.moviesPop = state.moviesPop; homeCollections.animeTrend = state.animeTrend; homeCollections.series = state.series;
+    seriesCache = state.series;
+    paintRows();
+  };
+  const coreJobs = [
+    ['animeTrend', () => toAnime({ query: Q_ANIME_TREND, variables: { page: 1 } })],
+    ['moviesPop', () => fetchCinemetaMovies()],
+    ['series', () => fetchTvmazePopular()]
+  ];
+  await Promise.all(coreJobs.map(async ([key, load]) => {
+    try { state[key] = await load() || []; }
+    catch (e) { console.warn('Could not load primary shelf:', key, e); state[key] = []; }
+    updateCoreUI();
+  }));
+  movieCache = state.moviesNew;
 
-  heroItems = [
-    ...moviesPop.slice(0, 4).map(m => ({
-      type: 'movie', tmdb: m.tmdb, imdb: m.imdb, title: m._title,
-      backdrop: m._backdrop || m._poster, desc: m.summary || 'Pick another server below the player if the first one is blank', score: null, year: ''
-    })),
-    ...series.slice(0, 3).map(s => ({
-      type: 'tv', imdb: s.imdb, tvmaze: s.tvmaze, title: s._title,
-      backdrop: s._backdrop || s._poster, desc: s.summary, score: null, year: (s.premiered || '').slice(0, 4)
-    })),
-    ...animeTrend.slice(0, 3).map(m => ({
-      type: 'anime', id: m.id, mal: m.idMal, title: m._title, raw:m,
-      backdrop: m.bannerImage || m._poster, desc: stripHtml(m.description),
-      score: m.averageScore ? m.averageScore / 10 : null, year: m.seasonYear, episodes: m.episodes
-    }))
-  ].filter(h => h.title);
-
-  renderHero(0);
-  renderTrending();
-  startHeroRotate();
-
-  let html = '';
-  if (moviesNew.length) html += rowHTML('New <em>Movies</em>', moviesNew.slice(0, 24), 'movies', 'rowMovies', 'New');
-  if (moviesPop.length) html += rowHTML('Popular <em>Movies</em>', moviesPop.slice(0, 24), 'movies', 'rowMoviesPop', 'Popular');
-  if (movAction.length) html += rowHTML('Action <em>Movies</em>', movAction.slice(0, 24), 'movies', 'rowMovAction', 'Action');
-  if (movComedy.length) html += rowHTML('Comedy <em>Movies</em>', movComedy.slice(0, 24), 'movies', 'rowMovComedy', 'Comedy');
-  if (movAni.length) html += rowHTML('Animation <em>Movies</em>', movAni.slice(0, 24), 'movies', 'rowMovAni', 'Animation');
-  if (movAdv.length) html += rowHTML('Adventure <em>Movies</em>', movAdv.slice(0, 24), 'movies', 'rowMovAdv', 'Adventure');
-  if (series.length) html += rowHTML('Trending Series <em>This Week</em>', series.slice(0, 24), 'series', 'rowSeries', 'Popular');
-  if (animeTrend.length) html += rowHTML('Trending <em>Anime</em>', animeTrend, 'genre', 'rowAnime', 'Trending');
-  if (action.length) html += rowHTML('Action <em>Anime</em>', action, 'genre', 'rowAction', 'Action');
-  if (romance.length) html += rowHTML('Romance <em>Anime</em>', romance, 'genre', 'rowRomance', 'Romance');
-  if (comedy.length) html += rowHTML('Comedy <em>Anime</em>', comedy, 'genre', 'rowComedy', 'Comedy');
-  if (animePop.length) html += rowHTML('Popular <em>Anime</em>', animePop, 'genre', 'rowAnimePop', 'Popular');
-  const recent = getContinueList();
-  if (recent.length) html = rowHTML('Continue <em>Watching</em>', recent, null, 'continueRow') + html;
-  $('homeRows').innerHTML = html || '<div class="state">Could not load content</div>';
-  const activePage = document.querySelector('.page.active')?.id || 'homeView';
-  if ($('searchOverlay')?.classList.contains('show') && !$('searchInput').value.trim()) renderSearchDiscovery();
+  // Fill the remaining shelves in the background; catalog caching makes later visits much faster.
+  const jobs = [
+    ['moviesNew', () => fetchNewMovies(1)],
+    ['movAction', () => fetchCinemetaMovies('genre=Action')],
+    ['movComedy', () => fetchCinemetaMovies('genre=Comedy')],
+    ['movAni', () => fetchCinemetaMovies('genre=Animation')],
+    ['movAdv', () => fetchCinemetaMovies('genre=Adventure')],
+    ['animePop', () => toAnime({ query: Q_ANIME_POP, variables: { page: 1 } })],
+    ['romance', () => toAnime({ query: Q_ANIME_GENRE, variables: { page: 1, genre: 'Romance' } })],
+    ['action', () => toAnime({ query: Q_ANIME_GENRE, variables: { page: 1, genre: 'Action' } })],
+    ['comedy', () => toAnime({ query: Q_ANIME_GENRE, variables: { page: 1, genre: 'Comedy' } })]
+  ];
+  await Promise.all(jobs.map(async ([key, load]) => {
+    try {
+      const items = await load();
+      state[key] = items || [];
+      homeCollections[key] = state[key];
+      if (key === 'moviesNew') movieCache = state.moviesNew;
+    } catch (e) { console.warn('Could not load homepage shelf:', key, e); }
+  }));
+  paintRows();
 }
 
 function renderTrending() {
