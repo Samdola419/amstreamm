@@ -8,6 +8,13 @@
   <meta name="description" content="Discover anime, movies, and series with AnimeStream. Browse trending picks, save a personal list, and continue watching across the experience.">
   <meta property="og:title" content="AnimeStream — Find Your Next Obsession">
   <meta property="og:description" content="Your next obsession is one click away. Explore anime, movies, and series worth staying in for.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://www.amstream.site/">
+  <meta property="og:site_name" content="AnimeStream">
+  <meta property="og:image" content="https://www.amstream.site/api/cover">
+  <meta property="og:image:alt" content="A trending title on AnimeStream">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:image" content="https://www.amstream.site/api/cover">
   <title>AnimeStream — Find Your Next Obsession</title>
   <link rel="icon" href="/logo.jpg">
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -1413,7 +1420,6 @@ let browseSkip = 0, browseLoading = false, browseRequestId = 0;
 const mediaRegistry = new Map();
 let mediaRegistryCounter = 0;
 let activeDetail = null;
-let sharePoster = null;
 let listFilter = 'all';
 
 const CATALOG_CACHE_TTL = 15 * 60 * 1000;
@@ -2767,7 +2773,6 @@ function openDetails(item, silent=false) {
   const saved=isSaved(m); $('detailSave').classList.toggle('saved',saved); $('detailSave').innerHTML=saved?'<i class="ri-check-line" aria-hidden="true"></i> In My List':'<i class="ri-bookmark-line" aria-hidden="true"></i> My List';
   $('detailPlay').onclick=()=>playItem(m);
   $('detailSave').onclick=()=>toggleSaved(m);
-  sharePoster=posterFile(m).catch(()=>null); // preload so the share sheet opens instantly
   $('detailShare').onclick=()=>shareTitle(m);
   const currentCollection=Array.from(mediaRegistry.values());
   const related=currentCollection.filter(x=>mediaKey(x)!==mediaKey(m) && (x._title||x.title)!==title);
@@ -2787,45 +2792,24 @@ function openDetails(item, silent=false) {
 }
 // ---- Sharing: poster image + a link that reopens this exact title ----
 function shareLink(m) {
-  const base = location.origin + location.pathname;
+  const home = location.origin + location.pathname, base = location.origin + '/api/share';
   const type = m._type || 'anime';
   const id = type === 'anime' ? (m.id || m.ani_id) : type === 'movie' ? m.imdb : (m.tvmaze || m.id);
-  if (!id || (type === 'movie' && !String(id).startsWith('tt'))) return base;
+  if (!id || (type === 'movie' && !String(id).startsWith('tt'))) return home;
   const u = new URL(base);
   u.searchParams.set('t', type); u.searchParams.set('id', String(id));
   return u.toString();
 }
-async function posterFile(m) {
-  const name = String(m._title || 'poster').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'poster';
-  for (const url of posterCandidates(m).slice(0, 4)) {
-    try {
-      const ctrl = new AbortController(), timer = setTimeout(() => ctrl.abort(), 5000);
-      const res = await fetch(url, { signal: ctrl.signal, mode: 'cors' });
-      clearTimeout(timer);
-      if (!res.ok) continue;
-      const blob = await res.blob();
-      if (!blob.size || !blob.type.startsWith('image/')) continue;
-      return new File([blob], `${name}.${blob.type.split('/')[1].replace('jpeg','jpg')}`, { type: blob.type });
-    } catch (_) { /* host blocked or slow; try the next poster */ }
-  }
-  return null;
-}
 async function shareTitle(m) {
   const btn = $('detailShare'), title = m._title || 'this title', link = shareLink(m);
-  const line = `${title} — watch it on AnimeStream`;
+  const text = `${title} — watch it on AnimeStream`;
   const flash = () => { btn.innerHTML = '<i class="ri-check-line" aria-hidden="true"></i>'; setTimeout(() => btn.innerHTML = '<i class="ri-share-line" aria-hidden="true"></i>', 1400); };
-  const file = await Promise.race([sharePoster || null, new Promise(r => setTimeout(() => r(null), 1500))]);
   try {
-    if (navigator.share) {
-      // Apps often drop `url` when a file is attached, so the link also goes in the text.
-      if (file && navigator.canShare?.({ files: [file] })) await navigator.share({ title, text: `${line}\n${link}`, files: [file] });
-      else await navigator.share({ title, text: line, url: link });
-      return;
-    }
-    await navigator.clipboard.writeText(`${line}\n${link}`); flash();
+    if (navigator.share) { await navigator.share({ title, text, url: link }); return; }
+    await navigator.clipboard.writeText(`${text}\n${link}`); flash();
   } catch (e) {
     if (e?.name === 'AbortError') return;
-    try { await navigator.clipboard.writeText(`${line}\n${link}`); flash(); } catch (_) {}
+    try { await navigator.clipboard.writeText(`${text}\n${link}`); flash(); } catch (_) {}
   }
 }
 // Opens ?t=anime|movie|tv&id=... links straight onto that title's page.
