@@ -6,9 +6,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <meta name="theme-color" content="#07100a">
   <meta name="description" content="Discover anime, movies, and series with AnimeStream. Browse trending picks, save a personal list, and continue watching across the experience.">
-  <meta property="og:title" content="AnimeStream — Discover Your Next Favorite">
-  <meta property="og:description" content="A cinematic green-accented home for anime, movies, and series.">
-  <title>AnimeStream — Discover Your Next Favorite</title>
+  <meta property="og:title" content="AnimeStream — Find Your Next Obsession">
+  <meta property="og:description" content="Your next obsession is one click away. Explore anime, movies, and series worth staying in for.">
+  <title>AnimeStream — Find Your Next Obsession</title>
   <link rel="icon" href="/logo.jpg">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
@@ -1055,7 +1055,7 @@ body { padding-bottom:0!important; }
       <div class="browse-hero-copy">
         <p class="browse-eyebrow" id="browseEyebrow"><i class="ri-compass-3-line" aria-hidden="true"></i> EXPLORE THE CATALOG</p>
         <h1 id="browseTitle">Discover</h1>
-        <p class="browse-intro" id="browseIntro">Find your next favorite from a collection chosen for your next watch.</p>
+        <p class="browse-intro" id="browseIntro">Your next obsession is waiting. Explore stories worth staying in for.</p>
         <div class="browse-hero-foot"><span id="browseCount"><i class="ri-sparkling-line" aria-hidden="true"></i> Curated picks</span><button class="browse-surprise" type="button" onclick="surpriseMe()"><i class="ri-shuffle-line" aria-hidden="true"></i> Surprise me</button></div>
       </div>
     </section>
@@ -1960,7 +1960,7 @@ async function loadBrowseLanding(requestId = browseRequestId) {
   view.innerHTML = '<div class="state"><i class="ri-loader-4-line" aria-hidden="true"></i> Curating your shelves…</div>';
   let landingArtItems = [];
   $('browseCount').innerHTML = '<i class="ri-sparkling-line" aria-hidden="true"></i> Curated collections';
-  $('browseEyebrow').innerHTML = '<i class="ri-compass-3-line" aria-hidden="true"></i> YOUR NEXT FAVORITE STARTS HERE';
+  $('browseEyebrow').innerHTML = '<i class="ri-compass-3-line" aria-hidden="true"></i> FIND YOUR NEXT OBSESSION';
   $('browseIntro').textContent = browseMode === 'movies' ? 'Big-screen stories, new discoveries, and genre shelves made for browsing.' : browseMode === 'series' ? 'Find your next obsession, from gripping mysteries to comfort-watch favorites.' : 'From breakout seasons to all-time favorites, explore anime by mood and genre.';
   try {
     let rows = '';
