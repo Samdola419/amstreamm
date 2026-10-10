@@ -1176,6 +1176,8 @@ body{background:var(--bg)!important;color:var(--ink)}
 }
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 
+.lang-btns:empty,.server-row:empty{display:none}
+
   </style>
 </head>
 <body>
@@ -1262,6 +1264,7 @@ body{background:var(--bg)!important;color:var(--ink)}
             <div class="server-label" id="serverLabel" style="display:none">Servers</div>
             <div class="server-row" id="serverRow"></div>
             <div class="lang-btns" id="playerControls"></div>
+            <div class="lang-btns" id="animeSeasons"></div>
           </div>
         </div>
         <div class="ep-panel" id="epPanel">
@@ -1457,6 +1460,7 @@ const Q_ANIME_TREND = `query($page:Int){Page(page:$page,perPage:24){pageInfo{has
 const Q_ANIME_POP = `query($page:Int){Page(page:$page,perPage:24){pageInfo{hasNextPage} media(type:ANIME,sort:POPULARITY_DESC,isAdult:false){id idMal title{romaji english} coverImage{large} bannerImage averageScore genres episodes seasonYear}}}`;
 const Q_ANIME_GENRE = `query($page:Int,$genre:String){Page(page:$page,perPage:24){pageInfo{hasNextPage} media(type:ANIME,genre:$genre,sort:POPULARITY_DESC,isAdult:false){id idMal title{romaji english} coverImage{large} bannerImage averageScore genres episodes seasonYear}}}`;
 const Q_ANIME_SEARCH = `query($q:String){Page(page:1,perPage:30){media(type:ANIME,search:$q,isAdult:false,sort:SEARCH_MATCH){id idMal title{romaji english} coverImage{large} bannerImage averageScore genres episodes seasonYear}}}`;
+const Q_ANIME_REL = `query($id:Int){Media(id:$id,type:ANIME){id idMal title{romaji english} episodes seasonYear format relations{edges{relationType node{id idMal type format title{romaji english} episodes seasonYear}}}}}`;
 const Q_ANIME_INFO = `query($id:Int){Media(id:$id,type:ANIME){id idMal title{romaji english} episodes averageScore genres seasonYear description(asHtml:false) coverImage{large} bannerImage}}`;
 
 function titleOf(m) { return m.title?.english || m.title?.romaji || m.title || m.name || 'Untitled'; }
@@ -2366,7 +2370,7 @@ function getCurrentServerAttempts(firstUrl) {
     if (id) TV_SERVERS.forEach((server, index) => entries.push({index, url: server.url(id, season, episode)}));
   } else if (current?.type === 'anime') {
     const episode = epIndex + 1;
-    ANIME_SERVERS.forEach((server, index) => entries.push({index, url: server.url(current, episode, lang)}));
+    entries.push({index: 0, url: ANIME_SERVERS[0].url(current, episode, lang)}); // anime is locked to MegaPlay
   }
   const normalizedFirst = normalizeStreamUrl(firstUrl);
   const startIndex = Math.max(0, entries.findIndex(e => normalizeStreamUrl(e.url) === normalizedFirst));
@@ -2404,7 +2408,7 @@ function tryPlaybackAttempt(token) {
     if (playbackQueueIndex < playbackQueue.length) tryPlaybackAttempt(token);
     else {
       const meta = $('mediaMeta');
-      if (meta && !meta.textContent.includes('Try another server')) meta.textContent += ' · Servers did not respond in time. Tap a server to retry.';
+      if (meta && !meta.textContent.includes('Try another server')) meta.textContent += (current?.type === 'anime' ? ' · MegaPlay is slow to respond. Pick the episode again to retry.' : ' · Servers did not respond in time. Tap a server to retry.');
     }
   }, 9000);
 }
@@ -2468,7 +2472,7 @@ function openMovie(tmdb, imdb, title, silent) {
   $('mediaTitle').textContent = title;
   $('mediaMeta').textContent = 'Movie · if the player is blank, tap another server';
   $('epPanel').style.display = 'none';
-  $('playerControls').innerHTML = '';
+  $('playerControls').innerHTML = ''; $('animeSeasons').innerHTML = '';
   renderServers(MOVIE_SERVERS);
   loadMovieServer();
 }
@@ -2491,7 +2495,7 @@ async function openTv(imdb, tvmazeId, title, silent) {
   $('mediaTitle').textContent = title;
   $('mediaMeta').textContent = 'Loading…';
   $('epPanel').style.display = '';
-  $('playerControls').innerHTML = '';
+  $('playerControls').innerHTML = ''; $('animeSeasons').innerHTML = '';
   renderServers(TV_SERVERS);
 
   if (tvmazeId && String(tvmazeId).match(/^\d+$/)) {
@@ -2557,7 +2561,7 @@ async function openAnime(aniId, malId, title, episodes, silent) {
   rememberContinue({ _type:'anime', id:aniId, idMal:malId, _title:title, episodes:episodes||12 });
   $('playerControls').innerHTML = `<button class="lang-btn active" id="btnSub" onclick="setLang('sub')">SUB</button>
     <button class="lang-btn" id="btnDub" onclick="setLang('dub')">DUB</button>`;
-  renderServers(ANIME_SERVERS);
+  renderServers([]); // no server switching for anime
   try {
     const [info, map] = await Promise.all([
       anilist(Q_ANIME_INFO, { id: aniId }).catch(() => null),
@@ -2574,21 +2578,86 @@ async function openAnime(aniId, malId, title, episodes, silent) {
       title: m ? titleOf(m) : title,
       episodes: m?.episodes || map?.episodeCount || episodes || 24
     };
+    current.epTitles = map?.episodes || {};
     let n = current.episodes; if (!n || n < 1) n = 12; if (n > 2000) n = 2000;
     current.episodes = n;
     $('mediaTitle').textContent = current.title;
-    $('mediaMeta').textContent = [m?.seasonYear, m?.averageScore ? `★ ${(m.averageScore/10).toFixed(1)}` : '', (m?.genres||[]).slice(0,4).join(', '), n + ' eps'].filter(Boolean).join(' · ') + ' · if the player is blank, tap another server';
+    $('mediaMeta').textContent = [m?.seasonYear, m?.averageScore ? `★ ${(m.averageScore/10).toFixed(1)}` : '', (m?.genres||[]).slice(0,4).join(', '), n + ' eps'].filter(Boolean).join(' · ');
   } catch (e) {
-    $('mediaMeta').textContent = (current.episodes || 12) + ' episodes · if the player is blank, tap another server';
+    $('mediaMeta').textContent = (current.episodes || 12) + ' episodes';
   }
   renderAnimeEps();
   playAnime(0);
+  loadAnimeSeasons(current);
+}
+const ANIME_TV_FORMATS = new Set(['TV','TV_SHORT','ONA']);
+function animeEpTitle(n) {
+  const t = current?.epTitles?.[String(n)]?.title;
+  return t ? (t.en || t['x-jat'] || t.ja || '') : '';
+}
+async function animeRelations(id) {
+  const d = await anilist(Q_ANIME_REL, { id }).catch(() => null);
+  const m = d?.Media;
+  if (!m) return null;
+  const edges = m.relations?.edges || [];
+  const pick = type => edges.find(e => e.relationType === type && e.node?.type === 'ANIME' && ANIME_TV_FORMATS.has(e.node.format))?.node;
+  return { node: m, prequel: pick('PREQUEL'), sequel: pick('SEQUEL') };
+}
+// Builds S1, S2, S3... by following AniList prequel/sequel links; playback is never blocked on this.
+async function loadAnimeSeasons(owner) {
+  if (!owner?.ani_id) return;
+  try {
+    const first = await animeRelations(owner.ani_id);
+    if (!first || current !== owner) return;
+    const seen = new Set([first.node.id]), chain = [first.node];
+    let back = first, hops = 0;
+    while (back.prequel && !seen.has(back.prequel.id) && hops++ < 8) {
+      const r = await animeRelations(back.prequel.id);
+      if (!r) break;
+      seen.add(r.node.id); chain.unshift(r.node); back = r;
+    }
+    let fwd = first; hops = 0;
+    while (fwd.sequel && !seen.has(fwd.sequel.id) && hops++ < 8) {
+      const r = await animeRelations(fwd.sequel.id);
+      if (!r) break;
+      seen.add(r.node.id); chain.push(r.node); fwd = r;
+    }
+    if (current !== owner) return;
+    owner.seasons = chain;
+    owner.seasonIdx = Math.max(0, chain.findIndex(s => s.id === first.node.id));
+    renderAnimeSeasons();
+  } catch (e) { console.warn('Anime seasons unavailable', e); }
+}
+function renderAnimeSeasons() {
+  const box = $('animeSeasons');
+  if (!box) return;
+  const list = current?.type === 'anime' ? (current.seasons || []) : [];
+  if (list.length < 2) { box.innerHTML = ''; return; }
+  box.innerHTML = list.map((s, i) =>
+    `<button class="season-btn ${i === current.seasonIdx ? 'active' : ''}" onclick="setAnimeSeason(${i})" title="${escAttr(titleOf(s))}">S${i + 1}</button>`
+  ).join('');
+}
+function setAnimeSeason(i) {
+  const c = current;
+  if (!c || c.type !== 'anime' || !c.seasons?.[i]) return;
+  const s = c.seasons[i];
+  c.seasonIdx = i; c.ani_id = s.id; c.mal_id = s.idMal || 0; c.imdb = ''; c.tmdb = '';
+  c.episodes = Math.min(Math.max(s.episodes || 12, 1), 2000); c.epTitles = {};
+  epIndex = 0;
+  $('mediaMeta').textContent = [titleOf(s), s.seasonYear, c.episodes + ' eps'].filter(Boolean).join(' · ');
+  renderAnimeSeasons(); renderAnimeEps(); playAnime(0);
+  fetch(`https://api.ani.zip/mappings?anilist_id=${s.id}`).then(r => r.ok ? r.json() : null).then(map => {
+    if (!map || current !== c || c.ani_id !== s.id) return;
+    c.epTitles = map.episodes || {};
+    if (!s.episodes && map.episodeCount) c.episodes = Math.min(map.episodeCount, 2000);
+    renderAnimeEps();
+  }).catch(() => {});
 }
 function renderAnimeEps() {
   const n = current.episodes || 12;
   let html = '';
   for (let i = 0; i < n; i++) {
-    html += `<div class="ep ${i===epIndex?'active':''}" onclick="playAnime(${i})"><span class="ep-num">Ep ${i+1}</span><span>Episode ${i+1}</span></div>`;
+    html += `<div class="ep ${i===epIndex?'active':''}" onclick="playAnime(${i})"><span class="ep-num">Ep ${i+1}</span><span>${escHtml(animeEpTitle(i+1) || 'Episode ' + (i+1))}</span></div>`;
   }
   $('episodeList').innerHTML = html;
 }
@@ -2597,7 +2666,8 @@ function playAnime(i) {
   epIndex = i;
   document.querySelectorAll('.ep').forEach((el, idx) => el.classList.toggle('active', idx === i));
   const ep = i + 1;
-  const srv = ANIME_SERVERS[serverIdx] || ANIME_SERVERS[0];
+  serverIdx = 0;
+  const srv = ANIME_SERVERS[0]; // MegaPlay only
   const url = srv.url(current, ep, lang);
   if (!url) {
     $('mediaMeta').textContent = 'This server has no id for this title. Tap another server.';
@@ -2629,7 +2699,7 @@ function serialMedia(item) {
     _title:m._title || m.title || 'Untitled', title:m._title || m.title || 'Untitled',
     _poster:m._poster || m.coverImage?.large || '', _posterFallback:m._posterFallback || m.image?.medium || '', _backdrop:m._backdrop || m.bannerImage || m._poster || '',
     bannerImage:m.bannerImage || m._backdrop || '', summary:m.summary || stripHtml(m.description) || '', description:m.description || m.summary || '',
-    _sub:m._sub || '', episodes:m.episodes || 12, seasonYear:m.seasonYear || '', averageScore:m.averageScore || null,
+    _sub:m._sub || '', episodes:m.episodes || 0, seasonYear:m.seasonYear || '', averageScore:m.averageScore || null,
     genres:Array.isArray(m.genres) ? m.genres.slice(0,8) : [], _src:m._src || ''
   };
 }
@@ -2686,14 +2756,13 @@ function openDetails(item, silent=false) {
   if(score) metas.push(`<span class="score">★ ${escHtml(score)}</span>`);
   if(year) metas.push(`<span>${escHtml(year)}</span>`);
   metas.push(`<span>${m._type==='anime'?'Anime':m._type==='tv'?'Series':'Movie'}</span>`);
-  if(m.episodes) metas.push(`<span>${m.episodes} episodes</span>`);
   (m.genres||[]).slice(0,3).forEach(g=>metas.push(`<span>${escHtml(g)}</span>`));
   $('detailMeta').innerHTML=metas.join('');
   let desc=stripHtml(m.description || m.summary || 'A new discovery is waiting. Explore the title, then choose Play to open the available player.');
   $('detailDescription').textContent=desc || 'A new discovery is waiting. Explore the title, then choose Play to open the available player.';
   const detailPosters = posterCandidates(m);
   $('detailPosterWrap').innerHTML=poster?`<img src="${escAttr(poster)}" data-poster-fallback="${escAttr(JSON.stringify(detailPosters.slice(1)))}" alt="${escAttr(title)} poster" loading="eager" onerror="handlePosterError(this)">`:'';
-  $('detailFacts').innerHTML=[m._src?`<span class="detail-fact"><b>Catalog</b> · ${escHtml(m._src)}</span>`:'',m._type==='anime'&&m.episodes?`<span class="detail-fact"><b>Episodes</b> · ${m.episodes}</span>`:'',m._sub?`<span class="detail-fact">${escHtml(m._sub)}</span>`:''].filter(Boolean).join('');
+  $('detailFacts').innerHTML=[m._src?`<span class="detail-fact"><b>Catalog</b> · ${escHtml(m._src)}</span>`:'',m._sub?`<span class="detail-fact">${escHtml(m._sub)}</span>`:''].filter(Boolean).join('');
   const saved=isSaved(m); $('detailSave').classList.toggle('saved',saved); $('detailSave').innerHTML=saved?'<i class="ri-check-line" aria-hidden="true"></i> In My List':'<i class="ri-bookmark-line" aria-hidden="true"></i> My List';
   $('detailPlay').onclick=()=>playItem(m);
   $('detailSave').onclick=()=>toggleSaved(m);
@@ -2707,6 +2776,15 @@ function openDetails(item, silent=false) {
   // Reuse already-loaded catalog items for instant recommendations, including anime, films, and series.
   const recs=related.slice(0,10);
   $('detailRelated').innerHTML=recs.length?rowHTML('You may <em>also like</em>',recs,null,'detailRelatedRow'):'';
+  if(m._type==='anime' && m.id){
+    const key=mediaKey(m);
+    anilist(Q_ANIME_INFO,{id:m.id}).then(d=>{
+      if(!activeDetail || mediaKey(activeDetail)!==key) return;
+      const n=d?.Media?.episodes;
+      $('detailMeta').insertAdjacentHTML('beforeend',`<span>${n?n+' episodes':'Ongoing'}</span>`);
+      $('detailFacts').insertAdjacentHTML('afterbegin',`<span class="detail-fact"><b>Episodes</b> · ${n||'Ongoing'}</span>`);
+    }).catch(()=>{});
+  }
   showPage('detailView');
 }
 function openMyList(silent=false) {
