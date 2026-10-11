@@ -1278,12 +1278,14 @@ body{background:var(--bg)!important;color:var(--ink)}
 }
 @media (max-width:620px){
   .nav-more{display:none}
-  .topnav-wrap .topnav{padding:10px 10px 18px!important;gap:0!important}
-  .topnav-wrap .nav-link{padding:9px 7px!important;font-size:.76rem!important}
+  .topnav-wrap .nav-link[data-nav="home"]{display:none} /* the logo already goes home; frees room for the other links */
+  .topnav-wrap .topnav{padding:10px 8px 18px 10px!important;gap:0!important}
+  .topnav-wrap .nav-link{padding:9px 5px!important;font-size:.74rem!important}
+  .topnav-wrap .brand{padding:3px 6px 3px 2px!important}
   /* search + profile stay pinned on the right while the links scroll */
-  .topnav-wrap .topnav>.nav-ico{position:sticky;background:var(--bg)!important;z-index:3;flex:0 0 36px;width:36px;height:36px}
+  .topnav-wrap .topnav>.nav-ico{position:sticky;background:var(--bg)!important;z-index:3;flex:0 0 32px;width:32px;height:32px}
   .topnav-wrap .topnav>.nav-ico:last-child{right:0}
-  .topnav-wrap .topnav>.nav-ico:nth-last-child(2){right:36px}
+  .topnav-wrap .topnav>.nav-ico:nth-last-child(2){right:32px}
   .detail-meta{gap:4px 14px!important}
   .detail-meta span+span::before{display:none}
   .hero-badge span+span::before{margin:0 7px}
@@ -1294,6 +1296,15 @@ body{background:var(--bg)!important;color:var(--ink)}
   #readerQuality{grid-column:1/-1;justify-self:start;min-height:34px}
   .reader-end{flex-direction:column;align-items:stretch}
   .up-thumb{flex-basis:56px}
+}
+
+/* Player page */
+.player-shell{padding-top:calc(env(safe-area-inset-top,0px) + 18px)!important}
+@media (max-width:960px) and (orientation:portrait){
+  .player-layout{gap:14px!important}
+  .player-layout>div:first-child{display:contents} /* video + info become direct children, so the video can stay pinned through the whole page */
+  .video-wrap{position:sticky;top:env(safe-area-inset-top,0px);z-index:25;margin-inline:calc(var(--pad) * -1);border-radius:0!important;box-shadow:0 10px 24px rgba(0,0,0,.55)!important}
+  .player-info{padding-top:2px}
 }
 
   </style>
@@ -1889,7 +1900,7 @@ function showPage(id) {
       setTimeout(() => { if (!el.classList.contains('active')) el.classList.add('hidden-page'); }, 280);
     }
   });
-  if (id !== 'playerView') $('player').src = '';
+  if (id !== 'playerView' && $('player').getAttribute('src')) setPlayerSrc('');
   window.scrollTo({ top: 0, behavior: 'smooth' });
   syncTopNavContext(id);
 }
@@ -2522,7 +2533,7 @@ function vastFinishAd(){
   $('vastAdClick').classList.remove('is-active'); $('vastAdClick').removeAttribute('href');
   // Pre-roll stream is already loaded behind the overlay; do not restart its navigation.
   // Mid-roll keeps its previous pause/resume behavior.
-  if(vastCurrentReason === 'midroll' && vastPendingUrl) $('player').src=vastPendingUrl;
+  if(vastCurrentReason === 'midroll' && vastPendingUrl) setPlayerSrc(vastPendingUrl);
   vastViewSeconds=0; vastNextMidroll=randomMidrollSeconds();
   vastLastActivity=Date.now();
 }
@@ -2532,7 +2543,7 @@ async function runVastAd(reason){
   const overlay=$('vastAdOverlay'), video=$('vastAdVideo'), close=$('vastAdClose');
   // During pre-roll the stream must keep loading behind the ad. Mid-roll temporarily
   // blanks it to avoid continuing audio beneath the ad, matching the existing behavior.
-  if(reason === 'midroll') $('player').src='about:blank';
+  if(reason === 'midroll') setPlayerSrc('about:blank');
   overlay.classList.add('is-visible'); $('vastAdLabel').textContent=reason==='preroll'?'Advertisement · Before your show':'Advertisement · Mid-roll';
   $('vastAdStatus').textContent='Loading advertisement…'; close.disabled=true; close.textContent='Ad playing';
   try{
@@ -2601,7 +2612,7 @@ function tryPlaybackAttempt(token) {
   playbackCurrentUrl = attempt.url;
   vastPendingUrl = attempt.url;
   updateActiveServer(attempt.index);
-  $('player').src = attempt.url;
+  setPlayerSrc(attempt.url);
   // Cross-origin embeds don't expose playable/error state, so only retry when navigation itself stalls.
   playbackTimer = setTimeout(() => {
     if (token !== playbackToken || playbackCurrentUrl !== attempt.url) return;
@@ -2613,10 +2624,22 @@ function tryPlaybackAttempt(token) {
     }
   }, 9000);
 }
-$('player')?.addEventListener('load', () => {
+function onPlayerLoad() {
   if (!$('player') || $('player').src !== playbackCurrentUrl) return;
   clearTimeout(playbackTimer);
-});
+}
+$('player')?.addEventListener('load', onPlayerLoad);
+// Changing an iframe's src adds an entry to the browser history, so Back needed two taps on the player page.
+// A fresh iframe that gets its src before it is inserted loads as a replacement, so Back only sees the app's own pages.
+function setPlayerSrc(url) {
+  const old = $('player');
+  if (!old) return;
+  const fresh = old.cloneNode(false);
+  fresh.removeAttribute('src');
+  if (url) fresh.setAttribute('src', url);
+  fresh.addEventListener('load', onPlayerLoad);
+  old.replaceWith(fresh);
+}
 function playNow(url) {
   if (!url) return;
   playbackToken++;
@@ -3447,12 +3470,23 @@ function filterMyList(filter) {
   document.querySelectorAll('[data-list-filter]').forEach(el=>el.classList.toggle('active',el.dataset.listFilter===filter));
   renderMyList();
 }
+function myListEmptyHTML(filter) {
+  const copy = {
+    all:   ['Your list starts here', 'Open any anime, movie, series, manga or comic and add it to My List. Your picks stay saved on this device.', 'Explore anime', "nav('anime')"],
+    anime: ['No anime saved yet', 'Open any anime and tap My List to keep it here.', 'Explore anime', "nav('anime')"],
+    tv:    ['No series saved yet', 'Open any series and tap My List to keep it here.', 'Explore series', "nav('series')"],
+    movie: ['No movies saved yet', 'Open any movie and tap My List to keep it here.', 'Explore movies', "nav('movies')"],
+    manga: ['No manga saved yet', 'Open any manga and tap My List to keep it here.', 'Explore manga', "nav('manga')"],
+    comic: ['No comics saved yet', 'Open any comic and tap My List to keep it here.', 'Explore comics', "nav('manga','comic')"]
+  }[filter] || ['Your list starts here', 'Add titles to My List and they stay saved on this device.', 'Explore anime', "nav('anime')"];
+  return `<div class="empty-collection"><span class="empty-icon"><i class="ri-bookmark-line" aria-hidden="true"></i></span><h2>${copy[0]}</h2><p>${copy[1]}</p><button onclick="${copy[3]}">${copy[2]}</button></div>`;
+}
 function renderMyList() {
   const all=getSavedList();
   setCollectionArt(all);
   const list=listFilter==='all'?all:all.filter(item=>(item._type||item.type)===listFilter);
   $('myListCount').textContent=`${all.length} saved title${all.length===1?'':'s'}`;
-  $('myListGrid').innerHTML=list.length?list.map(cardHTML).join(''):`<div class="empty-collection"><span class="empty-icon"><i class="ri-bookmark-line" aria-hidden="true"></i></span><h2>Your list starts here</h2><p>Open any anime, movie, or series and add it to My List. Your picks will stay saved on this device.</p><button onclick="nav('anime')">Explore anime</button></div>`;
+  $('myListGrid').innerHTML=list.length?list.map(cardHTML).join(''):myListEmptyHTML(listFilter);
   updateSavedCount();
 }
 function openContinue(silent=false) {
