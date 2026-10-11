@@ -17,6 +17,8 @@ async function md(path, params = []) {
 }
 const cleanDesc = s => String(s || '').split(/\n\s*---/)[0].replace(/\[([^\]]+)\]\([^)]*\)/g, '$1').replace(/[*_#>`]/g, '').trim();
 
+const proxy = u => `/api/img?u=${encodeURIComponent(u)}`; // MangaDex blocks covers requested from other sites
+
 function norm(d) {
   const a = d.attributes || {};
   const file = (d.relationships || []).find(r => r.type === 'cover_art')?.attributes?.fileName;
@@ -28,8 +30,8 @@ function norm(d) {
     year: a.year || '',
     status: a.status || '',
     tags: (a.tags || []).filter(t => t.attributes?.group === 'genre').map(t => t.attributes?.name?.en).filter(Boolean),
-    cover: base ? `${base}.512.jpg` : '',
-    cover256: base ? `${base}.256.jpg` : '',
+    cover: base ? proxy(`${base}.512.jpg`) : '',
+    cover256: base ? proxy(`${base}.256.jpg`) : '',
     authors: (d.relationships || []).filter(r => r.type === 'author').map(r => r.attributes?.name).filter(Boolean)
   };
 }
