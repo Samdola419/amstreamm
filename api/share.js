@@ -61,7 +61,7 @@ export default async function handler(req, res) {
 
   const title = item ? `${item.title}${item.year ? ` (${item.year})` : ''} — AnimeStream` : 'AnimeStream — Find Your Next Obsession';
   const desc = (item?.desc || 'Watch anime, movies, and series on AnimeStream.').slice(0, 200);
-  const image = item?.image ? https(item.image) : '';
+  const image = !item?.image ? '' : item.image.includes('uploads.mangadex.org') ? `${origin}/api/img?u=${encodeURIComponent(item.image)}` : https(item.image);
 
   const html = `<!DOCTYPE html><html lang="en"><head><meta charset="utf-8">
 <title>${esc(title)}</title>
