@@ -1307,6 +1307,24 @@ body{background:var(--bg)!important;color:var(--ink)}
   .player-info{padding-top:2px}
 }
 
+/* Phone/tablet home: shorter hero, trending as a numbered poster strip */
+@media (max-width:850px){
+  .hero{height:min(74vh,620px)!important;min-height:440px!important}
+  .hero-inner{padding-bottom:58px!important}
+  .hero-dots{bottom:24px!important}
+  .hero-desc{-webkit-line-clamp:3}
+  .trending-panel{padding:26px 0 0!important}
+  .trending-panel .feature-label{margin:0 var(--gutter) 14px!important;padding:0!important;border:0!important}
+  .trending-list{display:flex!important;flex-direction:row!important;justify-content:flex-start!important;gap:14px!important;overflow-x:auto;padding:0 var(--gutter) 8px!important;scroll-snap-type:x mandatory;scroll-padding-left:var(--gutter);scrollbar-width:none}
+  .trending-list::-webkit-scrollbar{display:none}
+  .trending-list .trend-item,.trending-list .trend-item:nth-child(n+4){display:block!important;position:relative;flex:0 0 128px;padding:0!important;border:0!important;scroll-snap-align:start}
+  .trend-poster{display:block!important;width:128px;height:192px;object-fit:cover;border-radius:3px;background:#131813}
+  .trend-rank{position:absolute!important;left:6px;bottom:58px;z-index:2;font-size:3.4rem;line-height:.8;-webkit-text-stroke:1.5px var(--ink);text-shadow:0 3px 16px rgba(0,0,0,.75)}
+  .trend-item:first-child .trend-rank{-webkit-text-stroke-color:var(--primary)}
+  .trend-name{margin-top:10px;font-size:.88rem}
+  .home-content{margin-top:6px}
+}
+
   </style>
 </head>
 <body>
@@ -1914,14 +1932,17 @@ function seedHistory() {
   const state = { app: 1, i: 0 };
   history.replaceState(state, '', location.href);
   history.pushState(state, '', location.href);
+  histStack[0].pos = history.length - 1;
 }
 function pushHist(entry) {
   if (applyingHistory) return;
   histStack.push(entry);
   history.pushState({ app: 1, i: histStack.length - 1 }, '', location.href);
+  entry.pos = history.length - 1; // where this page sits in the browser history
 }
 function rearmHistory() {
   history.pushState({ app: 1, i: Math.max(0, histStack.length - 1) }, '', location.href);
+  if (histStack.length) histStack[histStack.length - 1].pos = history.length - 1;
 }
 function applyHist(entry) {
   applyingHistory = true;
@@ -1963,8 +1984,13 @@ window.addEventListener('popstate', () => {
   applyHist(histStack[histStack.length - 1]);
   rearmHistory();
 });
+// Video sites inside the player add their own history entries, so one plain history.back() can land on one of theirs
+// and the page looks unchanged. Jump straight to this app's previous page instead, however many entries sit in between.
 function appBack() {
-  history.back();
+  const target = histStack[histStack.length - 2];
+  let steps = target && Number.isInteger(target.pos) ? (history.length - 1) - target.pos : 1;
+  if (steps < 1 || steps > history.length - 1) steps = 1;
+  history.go(-steps);
 }
 function goHome() { nav('home'); }
 function nav(mode, genre, silent) {
