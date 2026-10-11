@@ -1253,10 +1253,7 @@ body{background:var(--bg)!important;color:var(--ink)}
 .read-scope{display:flex;gap:6px}
 #mangaCount{display:inline-block;margin-top:6px}
 #mangaSortBar,#readTabs{flex-wrap:wrap}
-#readView .reader-pages{max-width:none}
 #readerView.comic .reader-controls,#readerView.comic .reader-end{display:none}
-#readerView.comic .reader-pages{max-width:none;background:#000}
-.comic-frame{display:block;width:100%;height:calc(100vh - 64px);min-height:520px;border:0;background:#000}
 
   </style>
 </head>
@@ -1427,7 +1424,6 @@ body{background:var(--bg)!important;color:var(--ink)}
     <div id="readRows"></div>
     <div class="grid hidden" id="mangaGrid"></div>
     <button class="load-more hidden" id="mangaMore" onclick="loadReadGrid(false)">Load more</button>
-    <p class="source-credit">Manga and chapters come from <a href="https://mangadex.org" target="_blank" rel="noopener">MangaDex</a> and the scanlation groups credited in the reader. Comics come from the <a href="https://archive.org" target="_blank" rel="noopener">Internet Archive</a>'s free-to-read collection.</p>
   </div>
 
   <div id="readerView" class="page hidden-page">
@@ -1446,7 +1442,6 @@ body{background:var(--bg)!important;color:var(--ink)}
       <button type="button" class="reader-btn" id="readerPrev2" onclick="readerGo(-1)">‹ Previous chapter</button>
       <button type="button" class="reader-btn primary" id="readerNext2" onclick="readerGo(1)">Next chapter ›</button>
     </div>
-    <p class="source-credit" id="readerCredit"></p>
   </div>
 
   <div id="continueView" class="page hidden-page">
@@ -3092,7 +3087,7 @@ const MANGA_PROGRESS = 'animestream.mangaprogress.v1', MANGA_SAVER = 'animestrea
 
 async function readApi(route, params) {
   const qs = new URLSearchParams(params).toString();
-  return cachedCatalog(route + ':' + qs, async () => {
+  return cachedCatalog(route + ':v2:' + qs, async () => {
     const res = await fetch(`/api/${route}?` + qs);
     if (!res.ok) throw new Error(route + ' API ' + res.status);
     return res.json();
@@ -3107,7 +3102,7 @@ function mapManga(n) {
     _poster: n.cover || '', _posterFallback: n.cover256 || '', _backdrop: n.cover || '',
     summary: n.description || '', description: n.description || '', seasonYear: n.year || '', genres: tags.slice(0, 6),
     _sub: [n.year, n.status ? n.status.charAt(0).toUpperCase() + n.status.slice(1) : '', tags.slice(0, 2).join(', ')].filter(Boolean).join(' · '),
-    _src: 'MangaDex'
+    _src: ''
   };
 }
 function mapComic(n) {
@@ -3116,7 +3111,7 @@ function mapComic(n) {
     _poster: n.cover || '', _posterFallback: n.cover || '', _backdrop: n.cover || '',
     summary: n.description || '', description: n.description || '', seasonYear: n.year || '', genres: (n.tags || []).slice(0, 6),
     _sub: [n.year, (n.authors || [])[0]].filter(Boolean).join(' · '),
-    _src: 'Internet Archive'
+    _src: ''
   };
 }
 async function fetchManga(opts = {}) {
@@ -3206,7 +3201,12 @@ async function loadReadLanding(kind, req) {
   };
   await Promise.all([worker(), worker(), worker()]); // a few at a time keeps MangaDex's rate limit happy
   if (req !== readReq) return;
-  if (!results.some(r => r?.length)) box.innerHTML = '<div class="state error">Could not load these shelves right now. Please try again in a moment.</div>';
+  if (!results.some(r => r?.length)) {
+    const local = location.protocol === 'file:' || ['localhost', '127.0.0.1', '[::1]'].includes(location.hostname);
+    box.innerHTML = local
+      ? '<div class="state error">Manga and comics load through the site\'s /api routes, which are not running here. Start the project with <b>vercel dev</b> (or deploy it) instead of opening index.html directly.</div>'
+      : '<div class="state error">Could not load these shelves right now. Please try again in a moment.</div>';
+  }
   else readHeroArt(results.flat());
 }
 function showReadGrid() {
@@ -3321,7 +3321,6 @@ async function loadReaderChapter(idx, silent) {
   $('readerView').classList.remove('comic');
   $('readerTitle').textContent = reader.item._title;
   $('readerChapter').textContent = [chapterLabel(c), c.title].filter(Boolean).join(' · ');
-  $('readerCredit').innerHTML = `Pages from <a href="https://mangadex.org" target="_blank" rel="noopener">MangaDex</a>${c.group ? ' · scanlated by ' + escHtml(c.group) : ''}`;
   $('readerSelect').innerHTML = reader.chapters.map((x, i) => `<option value="${i}" ${i === idx ? 'selected' : ''}>${escHtml([chapterLabel(x), x.title].filter(Boolean).join(' · '))}</option>`).join('');
   updateReaderNav();
   $('readerPages').innerHTML = '<div class="state">Loading pages…</div>';
@@ -3340,19 +3339,31 @@ async function loadReaderChapter(idx, silent) {
     if (token === readerToken) $('readerPages').innerHTML = '<div class="state error">Could not load this chapter.<br><button class="load-more" style="margin-top:14px" onclick="loadReaderChapter(reader.idx,true)">Try again</button></div>';
   }
 }
-function readComic(item, silent) {
+async function readComic(item, silent) {
   if (!item) return;
-  const it = serialMedia(item);
-  reader = null; readerToken++;
+  const it = serialMedia(item), token = ++readerToken;
+  reader = null;
   if (!silent) pushHist({ kind: 'comic', media: it });
   closeSearch(); toggleProfileMenu(true); setNav('manga');
   $('readerView').classList.add('comic');
   $('readerTitle').textContent = it._title;
-  $('readerChapter').textContent = [it.seasonYear, 'Internet Archive'].filter(Boolean).join(' · ');
-  $('readerCredit').innerHTML = `Scans from the <a href="https://archive.org/details/${encodeURIComponent(it.id)}" target="_blank" rel="noopener">Internet Archive</a>, free to read.`;
-  $('readerPages').innerHTML = `<iframe class="comic-frame" src="https://archive.org/embed/${encodeURIComponent(it.id)}" allowfullscreen title="${escAttr(it._title)}"></iframe>`;
+  $('readerChapter').textContent = it.seasonYear || '';
+  $('readerPages').innerHTML = '<div class="state">Loading pages…</div>';
   showPage('readerView');
   rememberContinue(it);
+  let pages = 0;
+  try { pages = Number((await comicsApi({ op: 'detail', id: it.id }))?.item?.pages) || 0; } catch (_) {}
+  if (token !== readerToken) return;
+  const known = pages > 0, count = known ? pages : 150; // unknown length: try a lot, unused slots remove themselves
+  const src = n => `https://iiif.archive.org/iiif/${encodeURIComponent(it.id)}$${n}/full/1100,/0/default.jpg`;
+  $('readerPages').innerHTML = Array.from({ length: count }, (_, i) =>
+    `<img class="reader-page" src="${escAttr(src(i))}" alt="Page ${i + 1}" loading="${i < 3 ? 'eager' : 'lazy'}" decoding="async" onerror="comicPageError(this,${known})">`).join('');
+}
+function comicPageError(img, known) {
+  if (!known) { img.remove(); return; }
+  img.classList.add('failed');
+  img.alt = 'This page did not load. Tap to retry.';
+  img.onclick = () => { const s = img.src; img.classList.remove('failed'); img.src = ''; img.src = s; };
 }
 function readerGo(delta) { if (reader) loadReaderChapter(reader.idx + delta); }
 function toggleReaderQuality() {
