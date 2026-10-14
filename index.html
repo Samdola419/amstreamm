@@ -2604,12 +2604,13 @@ function normalizeStreamUrl(url) { return String(url || '').replace(/^http:\/\//
 function getCurrentServerAttempts(firstUrl) {
   const entries = [];
   if (current?.type === 'movie') {
-    MOVIE_SERVERS.forEach((server, index) => entries.push({index, url: server.url(current)}));
+    // Only the server the viewer is on: no automatic hopping to other servers.
+    entries.push({index: serverIdx, url: (MOVIE_SERVERS[serverIdx] || MOVIE_SERVERS[0]).url(current)});
   } else if (current?.type === 'tv') {
     const list = current.seasons?.[season] || [];
     const episode = list[epIndex]?.number || epIndex + 1;
     const id = current.imdb || current.tmdb || current.id;
-    if (id) TV_SERVERS.forEach((server, index) => entries.push({index, url: server.url(id, season, episode)}));
+    if (id) entries.push({index: serverIdx, url: (TV_SERVERS[serverIdx] || TV_SERVERS[0]).url(id, season, episode)});
   } else if (current?.type === 'anime') {
     const episode = epIndex + 1;
     entries.push({index: 0, url: ANIME_SERVERS[0].url(current, episode, lang)}); // anime is locked to MegaPlay
@@ -2650,7 +2651,7 @@ function tryPlaybackAttempt(token) {
     if (playbackQueueIndex < playbackQueue.length) tryPlaybackAttempt(token);
     else {
       const meta = $('mediaMeta');
-      if (meta && !meta.textContent.includes('Try another server')) meta.textContent += (current?.type === 'anime' ? ' · MegaPlay is slow to respond. Pick the episode again to retry.' : ' · Servers did not respond in time. Tap a server to retry.');
+      if (meta && !meta.textContent.includes('Try another server')) meta.textContent += (current?.type === 'anime' ? ' · MegaPlay is slow to respond. Pick the episode again to retry.' : ' · This server is slow to respond. Give it a moment, or pick another server.');
     }
   }, 9000);
 }
