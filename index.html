@@ -1328,6 +1328,16 @@ body{background:var(--bg)!important;color:var(--ink)}
 .player-actions{display:flex;gap:10px;flex-wrap:wrap}
 .shield-hint{color:var(--ink-3);font-size:.74rem;line-height:1.5;margin:-4px 0 12px;max-width:56ch}
 
+/* Up-next card (auto-next) */
+.next-up{position:absolute;top:12px;right:12px;z-index:6;width:min(290px,calc(100% - 24px));padding:12px 14px 14px;background:rgba(9,12,10,.95);border:1px solid var(--rule);border-radius:3px}
+.next-up small{display:block;color:var(--ink-3);font-size:.68rem;letter-spacing:.14em;text-transform:uppercase;margin-bottom:4px}
+.next-up strong{display:block;font-size:.95rem;margin-bottom:10px;color:var(--ink)}
+.next-up-actions{display:flex;gap:8px}
+.next-up-actions button{flex:1;min-height:38px;border:1px solid var(--rule);border-radius:2px;font-weight:650;font-size:.82rem;color:var(--ink);background:transparent}
+.next-up-actions #nextUpPlay{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.next-up-bar{height:2px;background:var(--rule);margin-top:12px;overflow:hidden}
+.next-up-bar i{display:block;height:100%;width:0;background:var(--primary)}
+
   </style>
 </head>
 <body>
@@ -1407,12 +1417,13 @@ body{background:var(--bg)!important;color:var(--ink)}
       <div class="player-layout">
         <div>
           <div class="video-wrap">
+            <div class="next-up hidden" id="nextUp" role="status"><small>Up next</small><strong id="nextUpLabel"></strong><div class="next-up-actions"><button type="button" id="nextUpPlay" onclick="goNextEpisode()">Play now</button><button type="button" onclick="hideNextUp()">Cancel</button></div><div class="next-up-bar"><i id="nextUpBar"></i></div></div>
             <iframe id="player" allowfullscreen allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen" referrerpolicy="unsafe-url"></iframe>
           </div>
           <div class="player-info">
             <h1 id="mediaTitle"></h1>
             <div class="meta" id="mediaMeta"></div>
-            <div class="player-actions"><button type="button" class="ep-toggle" id="epToggle" onclick="toggleEpisodes()" aria-expanded="false" style="display:none"><i class="ri-list-check" aria-hidden="true"></i> Episodes</button><button type="button" class="ep-toggle active" id="shieldToggle" onclick="togglePopupShield()" aria-pressed="true">Pop-up shield: On</button></div>
+            <div class="player-actions"><button type="button" class="ep-toggle" id="epToggle" onclick="toggleEpisodes()" aria-expanded="false" style="display:none"><i class="ri-list-check" aria-hidden="true"></i> Episodes</button><button type="button" class="ep-toggle" id="nextBtn" onclick="goNextEpisode()" style="display:none">Next ›</button><button type="button" class="ep-toggle active" id="autoNextToggle" onclick="toggleAutoNext()" aria-pressed="true" style="display:none">Auto-next: On</button><button type="button" class="ep-toggle active" id="shieldToggle" onclick="togglePopupShield()" aria-pressed="true">Pop-up shield: On</button></div>
             <p class="shield-hint" id="shieldHint"></p>
             <div class="server-label" id="serverLabel" style="display:none">Servers</div>
             <div class="server-row" id="serverRow"></div>
@@ -2662,6 +2673,89 @@ function onPlayerLoad() {
 $('player')?.addEventListener('load', onPlayerLoad);
 // Changing an iframe's src adds an entry to the browser history, so Back needed two taps on the player page.
 // A fresh iframe that gets its src before it is inserted loads as a replacement, so Back only sees the app's own pages.
+// ---- Next episode + auto-next ----
+// The video lives in another site's page, so the only way to know an episode ended is if that player tells us (postMessage).
+// MegaPlay does ("complete" and "time"); other servers may not, and then the Next button is the way to continue.
+let autoNext = true;
+try { autoNext = localStorage.getItem('animestream.autonext') !== '0'; } catch (_) {}
+let nextUpTimer = null, nextUpShownFor = '';
+function nextEpisodeTarget() {
+  if (!current) return null;
+  if (current.type === 'tv') {
+    const list = current.seasons?.[season] || [];
+    if (epIndex + 1 < list.length) return { label: 'Episode ' + (list[epIndex + 1].number || epIndex + 2), go: () => playTv(epIndex + 1) };
+    const sl = current.seasonList || [], si = sl.indexOf(season);
+    if (si >= 0 && si + 1 < sl.length) return { label: 'Season ' + sl[si + 1] + ', Episode 1', go: () => setSeason(sl[si + 1]) };
+    return null;
+  }
+  if (current.type === 'anime') {
+    if (epIndex + 1 < (current.episodes || 0)) return { label: 'Episode ' + (epIndex + 2), go: () => playAnime(epIndex + 1) };
+    if (current.seasons && current.seasonIdx + 1 < current.seasons.length) return { label: 'Season ' + (current.seasonIdx + 2), go: () => setAnimeSeason(current.seasonIdx + 1) };
+  }
+  return null;
+}
+function syncNextUI() {
+  const has = !!nextEpisodeTarget(), nb = $('nextBtn'), ab = $('autoNextToggle');
+  if (nb) nb.style.display = has ? '' : 'none';
+  if (ab) { ab.style.display = current && current.type !== 'movie' ? '' : 'none'; ab.textContent = 'Auto-next: ' + (autoNext ? 'On' : 'Off'); ab.classList.toggle('active', autoNext); ab.setAttribute('aria-pressed', String(autoNext)); }
+}
+function toggleAutoNext() {
+  autoNext = !autoNext;
+  try { localStorage.setItem('animestream.autonext', autoNext ? '1' : '0'); } catch (_) {}
+  if (!autoNext) hideNextUp();
+  syncNextUI();
+}
+function hideNextUp() {
+  clearInterval(nextUpTimer); nextUpTimer = null;
+  $('nextUp')?.classList.add('hidden');
+}
+function goNextEpisode() {
+  const t = nextEpisodeTarget();
+  hideNextUp();
+  if (t) t.go();
+}
+function showNextUp(countdown) {
+  const t = nextEpisodeTarget(), card = $('nextUp');
+  if (!t || !card) return;
+  clearInterval(nextUpTimer);
+  $('nextUpLabel').textContent = t.label;
+  const bar = $('nextUpBar');
+  bar.style.transition = 'none'; bar.style.width = '0';
+  card.classList.remove('hidden');
+  if (!countdown) { $('nextUpPlay').textContent = 'Play now'; return; }
+  let left = countdown;
+  $('nextUpPlay').textContent = 'Play now (' + left + ')';
+  void bar.offsetWidth; bar.style.transition = 'width ' + countdown + 's linear'; bar.style.width = '100%';
+  nextUpTimer = setInterval(() => {
+    left--;
+    if (left <= 0) { goNextEpisode(); return; }
+    $('nextUpPlay').textContent = 'Play now (' + left + ')';
+  }, 1000);
+}
+function parsePlayerMessage(raw) {
+  let d = raw;
+  if (typeof d === 'string') { try { d = JSON.parse(d); } catch (_) { return null; } }
+  if (!d || typeof d !== 'object') return null;
+  const inner = (d.data && typeof d.data === 'object') ? d.data : (d.value && typeof d.value === 'object') ? d.value : d;
+  const ev = String(d.event || inner.event || d.type || '').toLowerCase();
+  const num = v => Number.isFinite(Number(v)) ? Number(v) : 0;
+  if (['complete', 'completed', 'ended', 'end', 'finish', 'finished'].includes(ev)) return { kind: 'complete' };
+  if (['time', 'timeupdate', 'progress'].includes(ev) || d.type === 'watching-log') {
+    const time = num(inner.time ?? inner.currentTime ?? inner.seconds), duration = num(inner.duration);
+    if (duration > 0) return { kind: 'time', time, duration };
+  }
+  return null;
+}
+window.addEventListener('message', e => {
+  const frame = $('player');
+  if (!frame || e.source !== frame.contentWindow || vastAdActive || !autoNext) return; // only the video frame, never while the ad plays
+  const m = parsePlayerMessage(e.data);
+  if (!m || !nextEpisodeTarget()) return;
+  const key = currentKey() + ':' + season + ':' + epIndex;
+  if (m.kind === 'complete') { nextUpShownFor = key; showNextUp(6); }
+  else if (m.duration > 120 && m.duration - m.time <= 20 && nextUpShownFor !== key) { nextUpShownFor = key; showNextUp(0); } // heads-up card near the end
+});
+
 // Pop-up shield: video servers open ad pages when you tap the player. A sandboxed frame can still play video,
 // but it is not allowed to open new windows or navigate this page, so those ads never open.
 let popupShield = true;
@@ -2694,6 +2788,7 @@ function togglePopupShield() {
 function setPlayerSrc(url) {
   const old = $('player');
   if (!old) return;
+  hideNextUp(); nextUpShownFor = ''; syncNextUI();
   const fresh = old.cloneNode(false);
   fresh.removeAttribute('src');
   if (popupShield && shieldApplies()) fresh.setAttribute('sandbox', SHIELD_SANDBOX); else fresh.removeAttribute('sandbox');
@@ -3577,6 +3672,7 @@ document.addEventListener('click', e => {
 
 updateSavedCount();
 renderShieldToggle();
+syncNextUI();
 loadHome();
 seedHistory();
 openSharedLink();
