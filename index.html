@@ -2666,9 +2666,17 @@ $('player')?.addEventListener('load', onPlayerLoad);
 let popupShield = true;
 try { popupShield = localStorage.getItem('animestream.shield') !== '0'; } catch (_) {}
 const SHIELD_SANDBOX = 'allow-scripts allow-same-origin allow-forms allow-presentation';
+// Anime plays on MegaPlay (no pop-ups), so the shield only applies to movies and series.
+const shieldApplies = () => current?.type !== 'anime';
+function syncShieldUI() {
+  const show = shieldApplies();
+  if ($('shieldToggle')) $('shieldToggle').style.display = show ? '' : 'none';
+  if ($('shieldHint')) $('shieldHint').style.display = show ? '' : 'none';
+}
 function renderShieldToggle() {
   const b = $('shieldToggle'), hint = $('shieldHint');
   if (!b) return;
+  syncShieldUI();
   b.textContent = 'Pop-up shield: ' + (popupShield ? 'On' : 'Off');
   b.classList.toggle('active', popupShield);
   b.setAttribute('aria-pressed', String(popupShield));
@@ -2687,7 +2695,8 @@ function setPlayerSrc(url) {
   if (!old) return;
   const fresh = old.cloneNode(false);
   fresh.removeAttribute('src');
-  if (popupShield) fresh.setAttribute('sandbox', SHIELD_SANDBOX); else fresh.removeAttribute('sandbox');
+  if (popupShield && shieldApplies()) fresh.setAttribute('sandbox', SHIELD_SANDBOX); else fresh.removeAttribute('sandbox');
+  syncShieldUI();
   if (url) fresh.setAttribute('src', url);
   fresh.addEventListener('load', onPlayerLoad);
   old.replaceWith(fresh);
