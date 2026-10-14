@@ -1325,6 +1325,9 @@ body{background:var(--bg)!important;color:var(--ink)}
   .home-content{margin-top:6px}
 }
 
+.player-actions{display:flex;gap:10px;flex-wrap:wrap}
+.shield-hint{color:var(--ink-3);font-size:.74rem;line-height:1.5;margin:-4px 0 12px;max-width:56ch}
+
   </style>
 </head>
 <body>
@@ -1409,7 +1412,8 @@ body{background:var(--bg)!important;color:var(--ink)}
           <div class="player-info">
             <h1 id="mediaTitle"></h1>
             <div class="meta" id="mediaMeta"></div>
-            <div class="player-actions"><button type="button" class="ep-toggle" id="epToggle" onclick="toggleEpisodes()" aria-expanded="false" style="display:none"><i class="ri-list-check" aria-hidden="true"></i> Episodes</button></div>
+            <div class="player-actions"><button type="button" class="ep-toggle" id="epToggle" onclick="toggleEpisodes()" aria-expanded="false" style="display:none"><i class="ri-list-check" aria-hidden="true"></i> Episodes</button><button type="button" class="ep-toggle active" id="shieldToggle" onclick="togglePopupShield()" aria-pressed="true">Pop-up shield: On</button></div>
+            <p class="shield-hint" id="shieldHint"></p>
             <div class="server-label" id="serverLabel" style="display:none">Servers</div>
             <div class="server-row" id="serverRow"></div>
             <div class="lang-btns" id="playerControls"></div>
@@ -2657,11 +2661,33 @@ function onPlayerLoad() {
 $('player')?.addEventListener('load', onPlayerLoad);
 // Changing an iframe's src adds an entry to the browser history, so Back needed two taps on the player page.
 // A fresh iframe that gets its src before it is inserted loads as a replacement, so Back only sees the app's own pages.
+// Pop-up shield: video servers open ad pages when you tap the player. A sandboxed frame can still play video,
+// but it is not allowed to open new windows or navigate this page, so those ads never open.
+let popupShield = true;
+try { popupShield = localStorage.getItem('animestream.shield') !== '0'; } catch (_) {}
+const SHIELD_SANDBOX = 'allow-scripts allow-same-origin allow-forms allow-presentation';
+function renderShieldToggle() {
+  const b = $('shieldToggle'), hint = $('shieldHint');
+  if (!b) return;
+  b.textContent = 'Pop-up shield: ' + (popupShield ? 'On' : 'Off');
+  b.classList.toggle('active', popupShield);
+  b.setAttribute('aria-pressed', String(popupShield));
+  if (hint) hint.textContent = popupShield
+    ? 'Blocks pop-up ads from the video server. If this server stays blank, turn it off or try another server.'
+    : 'Off: the video server can open pop-up ads. Turn it back on to block them.';
+}
+function togglePopupShield() {
+  popupShield = !popupShield;
+  try { localStorage.setItem('animestream.shield', popupShield ? '1' : '0'); } catch (_) {}
+  renderShieldToggle();
+  if (playbackCurrentUrl && $('player').getAttribute('src')) setPlayerSrc(playbackCurrentUrl); // reload the same stream with the new setting
+}
 function setPlayerSrc(url) {
   const old = $('player');
   if (!old) return;
   const fresh = old.cloneNode(false);
   fresh.removeAttribute('src');
+  if (popupShield) fresh.setAttribute('sandbox', SHIELD_SANDBOX); else fresh.removeAttribute('sandbox');
   if (url) fresh.setAttribute('src', url);
   fresh.addEventListener('load', onPlayerLoad);
   old.replaceWith(fresh);
@@ -3540,6 +3566,7 @@ document.addEventListener('click', e => {
 });
 
 updateSavedCount();
+renderShieldToggle();
 loadHome();
 seedHistory();
 openSharedLink();
