@@ -23,6 +23,10 @@
     else if (mal) src = 'https://megaplay.buzz/stream/mal/' + mal + '/' + ep + '/' + lang;
     else if (ani) src = 'https://megaplay.buzz/stream/ani/' + ani + '/' + ep + '/' + lang;
     if (src) document.getElementById('p').src = src;
+    // Pass the player's own messages (episode finished, progress) up to the site so it can auto-play the next episode.
+    window.addEventListener('message', function (e) {
+      if (e.source === document.getElementById('p').contentWindow) parent.postMessage(e.data, '*');
+    });
   </script>
 </body>
 </html>
