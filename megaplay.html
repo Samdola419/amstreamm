@@ -1,103 +1,32 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Shield Lab</title>
-<style>
-  body { margin: 0; background: #0b0b0b; color: #eee; font: 14px/1.5 system-ui, sans-serif; }
-  .wrap { max-width: 1100px; margin: 0 auto; padding: 16px; }
-  h1 { font-size: 1.2rem; margin: 0 0 4px; }
-  p.sub { color: #999; margin: 0 0 14px; }
-  .row { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 10px; align-items: center; }
-  button { background: #2a2a2a; color: #fff; border: 0; border-radius: 8px; padding: 8px 12px; cursor: pointer; font-weight: 600; }
-  button.go { background: #e50914; }
-  label.flag { display: flex; gap: 6px; align-items: center; background: #161616; border: 1px solid #2a2a2a; border-radius: 8px; padding: 6px 10px; }
-  label.danger { border-color: #7a2a2a; }
-  input[type=text] { background: #161616; color: #fff; border: 1px solid #2a2a2a; border-radius: 8px; padding: 8px; width: 90px; }
-  #frameBox { aspect-ratio: 16/9; background: #000; border-radius: 10px; overflow: hidden; margin: 12px 0; }
-  #frameBox iframe { width: 100%; height: 100%; border: 0; }
-  #log { background: #111; border: 1px solid #2a2a2a; border-radius: 10px; padding: 10px; height: 160px; overflow: auto; font: 12px/1.5 ui-monospace, monospace; color: #9fd; }
-  code { background: #1b1b1b; padding: 1px 5px; border-radius: 4px; }
-</style>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="referrer" content="unsafe-url">
+  <title>Player</title>
+  <style>
+    html, body, iframe { margin: 0; width: 100%; height: 100%; border: 0; background: #000; }
+  </style>
 </head>
 <body>
-<div class="wrap">
-  <h1>Shield Lab</h1>
-  <p class="sub">Put this file in the same folder as <code>megaplay.html</code>. Pick sandbox flags, press Load, and see if MegaPlay plays. Red-outlined flags are the ones that let pop-ups or redirects through.</p>
-
-  <div class="row">
-    MAL id <input type="text" id="mal" value="21"> Episode <input type="text" id="ep" value="1">
-    <button class="go" onclick="load()">Load player</button>
-    <button onclick="clearLog()">Clear log</button>
-  </div>
-
-  <div class="row" id="presets">
-    <button onclick="preset('current')">Current shield</button>
-    <button onclick="preset('plus')">Current + modals, pointer-lock, orientation, downloads</button>
-    <button onclick="preset('nopop')">Everything except pop-ups and top navigation</button>
-    <button onclick="preset('userNav')">Previous + top-nav by user activation</button>
-    <button onclick="preset('none')">No sandbox (control)</button>
-  </div>
-
-  <div class="row" id="flags"></div>
-
-  <div id="frameBox"><iframe id="player" allow="autoplay; fullscreen; encrypted-media; picture-in-picture" allowfullscreen></iframe></div>
-
-  <p><b>Log</b> (a tab opening shows up as the page losing focus):</p>
-  <div id="log"></div>
-</div>
-<script>
-const FLAGS = [
-  ['allow-scripts', false], ['allow-same-origin', false], ['allow-forms', false], ['allow-presentation', false],
-  ['allow-modals', false], ['allow-pointer-lock', false], ['allow-orientation-lock', false], ['allow-downloads', false],
-  ['allow-top-navigation-by-user-activation', true], ['allow-popups', true],
-  ['allow-popups-to-escape-sandbox', true], ['allow-top-navigation', true]
-];
-const PRESETS = {
-  current: ['allow-scripts','allow-same-origin','allow-forms','allow-presentation'],
-  plus: ['allow-scripts','allow-same-origin','allow-forms','allow-presentation','allow-modals','allow-pointer-lock','allow-orientation-lock','allow-downloads'],
-  nopop: ['allow-scripts','allow-same-origin','allow-forms','allow-presentation','allow-modals','allow-pointer-lock','allow-orientation-lock','allow-downloads'],
-  userNav: ['allow-scripts','allow-same-origin','allow-forms','allow-presentation','allow-modals','allow-pointer-lock','allow-orientation-lock','allow-downloads','allow-top-navigation-by-user-activation'],
-  none: null
-};
-const $ = id => document.getElementById(id);
-const flagsEl = $('flags');
-FLAGS.forEach(([name, danger]) => {
-  const l = document.createElement('label');
-  l.className = 'flag' + (danger ? ' danger' : '');
-  l.innerHTML = `<input type="checkbox" value="${name}"> ${name.replace('allow-','')}`;
-  flagsEl.appendChild(l);
-});
-let noSandbox = false;
-function preset(name) {
-  noSandbox = PRESETS[name] === null;
-  const on = new Set(PRESETS[name] || []);
-  flagsEl.querySelectorAll('input').forEach(i => i.checked = on.has(i.value));
-  log('Preset: ' + name + (noSandbox ? ' (no sandbox attribute)' : ''));
-}
-function log(msg) {
-  const d = document.createElement('div');
-  d.textContent = new Date().toLocaleTimeString() + '  ' + msg;
-  $('log').appendChild(d); $('log').scrollTop = 1e9;
-}
-function clearLog() { $('log').innerHTML = ''; }
-function load() {
-  const flags = [...flagsEl.querySelectorAll('input:checked')].map(i => i.value);
-  const old = $('player'), fresh = old.cloneNode(false);
-  fresh.removeAttribute('src'); fresh.removeAttribute('sandbox');
-  if (!noSandbox) fresh.setAttribute('sandbox', flags.join(' '));
-  const mal = ($('mal').value || '21').replace(/\D/g, ''), ep = ($('ep').value || '1').replace(/\D/g, '');
-  fresh.src = `megaplay.html?mal=${mal}&ep=${ep}&lang=sub`;
-  fresh.onload = () => log('Frame loaded. Does it play, or show a sandbox message?');
-  old.replaceWith(fresh); fresh.id = 'player';
-  log('Loading with sandbox: ' + (noSandbox ? '(none)' : flags.join(' ') || '(empty)'));
-}
-window.addEventListener('blur', () => log('Page lost focus (a tab or window may have opened, or you clicked into the frame)'));
-window.addEventListener('focus', () => log('Page regained focus'));
-document.addEventListener('visibilitychange', () => log('Visibility: ' + document.visibilityState));
-window.addEventListener('message', e => log('Player message: ' + String(JSON.stringify(e.data)).slice(0, 120)));
-preset('current');
-</script>
+  <iframe id="p" allow="autoplay; fullscreen; encrypted-media; picture-in-picture" allowfullscreen referrerpolicy="unsafe-url"></iframe>
+  <script>
+    const q = new URLSearchParams(location.search);
+    const lang = q.get('lang') === 'dub' ? 'dub' : 'sub';
+    const ep = q.get('ep') || '1';
+    const mal = (q.get('mal') || '').replace(/[^\d]/g, '');
+    const ani = (q.get('ani') || '').replace(/[^\d]/g, '');
+    const embed = (q.get('embed') || '').replace(/[^\d]/g, '');
+    let src = '';
+    if (embed) src = 'https://megaplay.buzz/stream/s-2/' + embed + '/' + lang;
+    else if (mal) src = 'https://megaplay.buzz/stream/mal/' + mal + '/' + ep + '/' + lang;
+    else if (ani) src = 'https://megaplay.buzz/stream/ani/' + ani + '/' + ep + '/' + lang;
+    if (src) document.getElementById('p').src = src;
+    // Pass the player's own messages (episode finished, progress) up to the site so it can auto-play the next episode.
+    window.addEventListener('message', function (e) {
+      if (e.source === document.getElementById('p').contentWindow) parent.postMessage(e.data, '*');
+    });
+  </script>
 </body>
 </html>
