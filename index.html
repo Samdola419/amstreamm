@@ -1075,6 +1075,7 @@ a { color: inherit; }
 
 /* --------------------------------------------------------- halloween decor */
 .season-decor { display: none; }
+body.is-watching .season-decor, body.is-watching .spider-hang { display: none !important; }
 .spider-hang, .footer-pumpkins { display: none; }
 [data-season="halloween"] .season-decor {
   display: block;
@@ -2012,6 +2013,7 @@ function showPage(id) {
   });
   if (id !== 'playerView' && $('player').getAttribute('src')) setPlayerSrc('');
   window.scrollTo({ top: 0, behavior: 'smooth' });
+  document.body.classList.toggle('is-watching', id === 'playerView');
   document.body.classList.toggle('no-side', id === 'playerView' || id === 'readerView' || id === 'detailView');
   syncBannerAd(id);
   syncTopNavContext(id);
@@ -2920,6 +2922,9 @@ window.addEventListener('message', e => {
 let popupShield = true;
 try { popupShield = localStorage.getItem('animestream.shield') !== '0'; } catch (_) {}
 const SHIELD_SANDBOX = 'allow-scripts allow-same-origin allow-forms allow-presentation';
+// MegaPlay refuses to play unless it is allowed to open windows (verified in the Shield Lab), so it gets allow-popups.
+// Still withheld: top-navigation (it cannot redirect this page), popups-to-escape-sandbox (any tab it opens stays sandboxed) and modals.
+const SHIELD_SANDBOX_MEGAPLAY = 'allow-scripts allow-same-origin allow-forms allow-popups';
 // Anime plays on MegaPlay (no pop-ups), so the shield only applies to movies and series.
 const shieldApplies = () => true; // pop-up shield now covers anime too: no ads or pop-ups on the watch page
 function syncShieldUI() {
@@ -2950,7 +2955,7 @@ function setPlayerSrc(url) {
   hideNextUp(); nextUpShownFor = ''; syncNextUI();
   const fresh = old.cloneNode(false);
   fresh.removeAttribute('src');
-  if (popupShield && shieldApplies()) fresh.setAttribute('sandbox', SHIELD_SANDBOX); else fresh.removeAttribute('sandbox');
+  if (popupShield && shieldApplies()) fresh.setAttribute('sandbox', /megaplay\.html/i.test(url || '') ? SHIELD_SANDBOX_MEGAPLAY : SHIELD_SANDBOX); else fresh.removeAttribute('sandbox');
   syncShieldUI();
   if (url) fresh.setAttribute('src', url);
   fresh.addEventListener('load', onPlayerLoad);
@@ -3256,7 +3261,9 @@ async function openAnime(aniId, malId, title, episodes, silent) {
   setEpisodeMode(true);
   lang = saved?.lang === 'dub' ? 'dub' : 'sub'; epIndex = startEp;
   current = { type: 'anime', ani_id: aniId, openedId, mal_id: malId, imdb: '', tmdb: '', title, episodes: episodes || 12 };
-  rememberContinue({ _type:'anime', id:openedId, idMal:malId, _title:title, episodes:episodes||12 });
+  const known = Array.from(mediaRegistry.values()).find(x => (x._type || x.type) === 'anime' && String(x.id) === String(openedId));
+  rememberContinue({ ...(known || {}), _type:'anime', id:openedId, idMal:malId || known?.idMal || 0, _title:title, episodes:episodes||12 });
+  healContinuePosters();
   $('playerControls').innerHTML = `<button class="lang-btn ${lang === 'sub' ? 'active' : ''}" id="btnSub" onclick="setLang('sub')">SUB</button>
     <button class="lang-btn ${lang === 'dub' ? 'active' : ''}" id="btnDub" onclick="setLang('dub')">DUB</button>`;
   renderServers([]); // no server switching for anime
@@ -3455,6 +3462,17 @@ function rememberContinue(item) {
   if(!item) return;
   const m=serialMedia(item), list=getContinueList();
   const key=mediaKey(m);
+  const old=list.find(x=>mediaKey(x)===key);
+  if(old){ // keep artwork saved earlier when the new entry has none
+    if(!m._poster && old._poster) m._poster=old._poster;
+    if(!m._posterFallback && old._posterFallback) m._posterFallback=old._posterFallback;
+    if(!m.bannerImage && old.bannerImage) { m.bannerImage=old.bannerImage; if(!m._backdrop) m._backdrop=old.bannerImage; }
+    if(!m.genres.length && old.genres?.length) m.genres=old.genres;
+    if(!m.seasonYear && old.seasonYear) m.seasonYear=old.seasonYear;
+    if(!m.averageScore && old.averageScore) m.averageScore=old.averageScore;
+    if(!m.description && old.description) m.description=old.description;
+    if(!m._sub && old._sub) m._sub=old._sub;
+  }
   const filtered=list.filter(x=>mediaKey(x)!==key);
   filtered.unshift({ ...m, _updatedAt:Date.now() });
   safeWriteStore('animestream.continue.v1',filtered.slice(0,30));
@@ -3898,6 +3916,34 @@ function renderMyList() {
   $('myListGrid').innerHTML=list.length?list.map(cardHTML).join(''):myListEmptyHTML(listFilter);
   updateSavedCount();
 }
+let healingContinue = false;
+async function healContinuePosters() {
+  if (healingContinue) return;
+  const hasArt = x => x._poster || x.coverImage?.large || x._posterFallback;
+  const need = getContinueList().filter(x => (x._type || x.type) === 'anime' && !hasArt(x) && x.id);
+  if (!need.length) return;
+  healingContinue = true;
+  try {
+    const fixes = {};
+    for (const x of need.slice(0, 12)) {
+      try {
+        const d = await anilist(Q_ANIME_INFO, { id: Number(x.id) });
+        if (d?.Media) fixes[mediaKey(x)] = mapAnime(d.Media);
+      } catch (_) {}
+    }
+    if (Object.keys(fixes).length) {
+      const list = getContinueList().map(x => {
+        const f = fixes[mediaKey(x)];
+        if (!f) return x;
+        return { ...x, _poster: f._poster, bannerImage: f.bannerImage || x.bannerImage || '', _backdrop: f.bannerImage || f._poster || x._backdrop || '',
+          genres: f.genres || x.genres || [], seasonYear: f.seasonYear || x.seasonYear || '', averageScore: f.averageScore || x.averageScore || null,
+          description: f.description || x.description || '', _sub: f._sub || x._sub || '', idMal: x.idMal || f.idMal || 0 };
+      });
+      safeWriteStore('animestream.continue.v1', list);
+      if (currentScreenId === 'continueView') openContinue(true);
+    }
+  } finally { healingContinue = false; }
+}
 function openContinue(silent=false) {
   if(!silent && !applyingHistory) pushHist({kind:'continue'});
   closeSearch();toggleProfileMenu(true);setNav('');
@@ -3905,6 +3951,7 @@ function openContinue(silent=false) {
   setCollectionArt(list);
   $('continueGrid').innerHTML=list.length?list.map(cardHTML).join(''):`<div class="empty-collection"><span class="empty-icon"><i class="ri-history-line" aria-hidden="true"></i></span><h2>Nothing playing yet</h2><p>When you start a title, it will appear here so you can jump back in quickly.</p><button onclick="goHome()">Discover something</button></div>`;
   showPage('continueView');
+  healContinuePosters();
 }
 function toggleProfileMenu(forceClose=false) {
   const menu=$('profileMenu'); if(!menu) return;
