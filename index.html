@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="6a97888e-site-verification" content="dd5b24e8634d20e23406825d1ece7de9">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#06100b">
+  <meta name="description" content="Discover movies, series and anime on AnimeStream. Save favourites and continue watching on this device.">
+  <meta property="og:title" content="AnimeStream | Anime">
+  <meta property="og:description" content="Discover movies, series and anime. Save favourites and pick up where you left off.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://www.amstream.site/">
+  <meta property="og:site_name" content="AnimeStream">
+  <meta property="og:image" content="https://www.amstream.site/api/cover">
+  <meta property="og:image:alt" content="A trending title on AnimeStream">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:image" content="https://www.amstream.site/api/cover">
+  <title>AnimeStream — Movies, Series & Anime</title>
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="canonical" href="https://www.amstream.site/">
+  <link rel="stylesheet" href="/assets/css/app.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+  <link rel="preconnect" href="https://graphql.anilist.co" crossorigin>
+  <link rel="preconnect" href="https://api.tvmaze.com" crossorigin>
+  <link rel="preconnect" href="https://api.ani.zip" crossorigin>
+  <link rel="preconnect" href="https://v3-cinemeta.strem.io" crossorigin>
+  <link rel="preconnect" href="https://images.metahub.space" crossorigin>
+  <link rel="preconnect" href="https://s.magsrv.com" crossorigin>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/remixicon@4.6.0/fonts/remixicon.css">
+  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+
+</head>
+<body>
+<aside class="sidebar" id="sideNav" aria-label="Main">
+  <div class="brand" onclick="goHome()" title="AnimeStream home">
+    <img class="brand-badge" src="/logo.jpg" alt="" width="32" height="32">
+    <span>Anime<b>Stream</b></span>
+  </div>
+  <button class="side-item active" data-nav="home" onclick="nav('home')"><i class="ri-home-smile-2-fill" aria-hidden="true"></i> Home</button>
+  <button class="side-item" data-nav="movies" onclick="nav('movies')"><i class="ri-film-fill" aria-hidden="true"></i> Movies</button>
+  <button class="side-item" data-nav="series" onclick="nav('series')"><i class="ri-tv-fill" aria-hidden="true"></i> Series</button>
+  <button class="side-item" data-nav="anime" onclick="nav('anime')"><i class="ri-apps-2-fill" aria-hidden="true"></i> Anime</button>
+  <button class="side-item" data-nav="mylist" onclick="openMyList()"><i class="ri-bookmark-line" aria-hidden="true"></i> My List</button>
+  <button class="side-item" data-nav="continue" onclick="openContinue()"><i class="ri-history-line" aria-hidden="true"></i> Continue Watching</button>
+</aside>
+<div class="app">
+  <div class="topnav-wrap">
+    <nav class="topnav">
+      <button class="nav-ico nav-burger" onclick="toggleDrawer()" aria-label="Open menu">
+        <i class="ri-menu-line" aria-hidden="true"></i>
+      </button>
+      <div class="brand" onclick="goHome()" title="AnimeStream home">
+        <img class="brand-badge" src="/logo.jpg" alt="" width="32" height="32">
+        <span>Anime<b>Stream</b></span>
+      </div>
+      <button class="nav-link active" data-nav="home" onclick="nav('home')">Home</button>
+      <button class="nav-link" data-nav="movies" onclick="nav('movies')">Movies</button>
+      <button class="nav-link" data-nav="series" onclick="nav('series')">Series</button>
+      <button class="nav-link" data-nav="anime" onclick="nav('anime')">Anime</button>
+      <button class="nav-link" data-nav="manga" onclick="nav('manga')">Manga<span class="nav-more"> &amp; Comics</span></button>
+      <button class="nav-link nav-mylist" data-nav="mylist" onclick="openMyList()">My List</button>
+      <form class="nav-search" onsubmit="return false" role="search">
+        <input type="search" placeholder="Search" autocomplete="off" aria-label="Search titles" onfocus="navSearchOpen()">
+        <button type="button" onclick="navSearchOpen()" aria-label="Search"><i class="ri-search-line" aria-hidden="true"></i></button>
+      </form>
+      <button class="nav-ico search-mobile" onclick="openSearch()" aria-label="Search">
+        <i class="ri-search-line" aria-hidden="true"></i>
+      </button>
+      <button class="nav-ico" onclick="openMyList()" aria-label="My List" title="My List">
+        <i class="ri-bookmark-line" aria-hidden="true"></i>
+      </button>
+            <button class="nav-ico profile-trigger" onclick="toggleProfileMenu()" aria-label="Open your library" title="Your library"><i class="ri-book-shelf-line" aria-hidden="true"></i></button>
+    </nav>
+    <div class="profile-menu" id="profileMenu" aria-label="Your menu">
+      <div class="profile-menu-top"><span class="profile-avatar"><i class="ri-book-shelf-line" aria-hidden="true"></i></span><div><strong>Your library</strong><small>Saved on this device · no account</small></div></div>
+      <button onclick="openMyList();toggleProfileMenu(true)"><span class="profile-menu-item"><i class="ri-bookmark-line" aria-hidden="true"></i> My List</span><span id="savedCount">0</span></button>
+      <button onclick="openContinue();toggleProfileMenu(true)"><span class="profile-menu-item"><i class="ri-history-line" aria-hidden="true"></i> Continue Watching</span><i class="ri-arrow-right-s-line" aria-hidden="true"></i></button>
+      <button onclick="openSearch();toggleProfileMenu(true)"><span class="profile-menu-item"><i class="ri-search-line" aria-hidden="true"></i> Find something to watch</span><i class="ri-arrow-right-s-line" aria-hidden="true"></i></button>
+    </div>
+</div>
+
+  <div id="homeView" class="page active">
+    <!-- Ad zone (VAST): https://s.magsrv.com/v1/vast.php?idz=6051704 -->
+    <section class="ad-banner ad-home" id="adBanner" data-vast="https://s.magsrv.com/v1/vast.php?idz=6051704" aria-label="Sponsored">
+      <video id="adBannerVideo" muted playsinline autoplay preload="auto"></video>
+      <a id="adBannerLink" target="_blank" rel="noopener noreferrer sponsored" aria-label="Visit advertiser"></a>
+      <span class="ad-banner-tag">Sponsored</span>
+    </section>
+
+    <div class="hero" id="hero" hidden>
+      <div class="hero-preview" id="heroPreview" aria-hidden="true"></div>
+      <div class="hero-inner">
+        <h1 class="hero-title" id="heroTitle">Loading…</h1>
+        <div class="hero-badge" id="heroBadge"></div>
+        <p class="hero-desc" id="heroDesc"></p>
+        <div class="hero-actions">
+          <button class="btn-play" id="heroPlay"><i class="ri-play-fill" aria-hidden="true"></i> Play</button>
+          <button class="btn-more" id="heroMore"><i class="ri-information-line" aria-hidden="true"></i> More info</button>
+          <button class="btn-round" id="heroList" aria-label="Add to My List" title="Add to My List"><i class="ri-add-line" aria-hidden="true"></i></button>
+        </div>
+      </div>
+      <div class="hero-dots" id="heroDots"></div>
+    </div>
+
+    <div class="chip-row" role="tablist" aria-label="Browse categories">
+      <button class="yt-chip active" data-nav="home" onclick="nav('home')">All</button>
+      <button class="yt-chip" data-nav="movies" onclick="nav('movies')">Movies</button>
+      <button class="yt-chip" data-nav="series" onclick="nav('series')">Series</button>
+      <button class="yt-chip" data-nav="anime" onclick="nav('anime')">Anime</button>
+      <button class="yt-chip" data-nav="manga" onclick="nav('manga')">Manga</button>
+      <button class="yt-chip" data-nav="mylist" onclick="openMyList()">My List</button>
+      <button class="yt-chip" data-nav="continue" onclick="openContinue()">Continue Watching</button>
+    </div>
+
+    <div class="home-content" id="homeRows"></div>
+  </div>
+
+  <div id="browseView" class="page hidden-page">
+    <div class="cat-head hidden" id="catHead"><h1 id="catHeadTitle">Category</h1></div>
+    <section class="browse-hero" id="browseHero" aria-label="Browse collection">
+      <div class="browse-hero-copy">
+        <p class="browse-eyebrow" id="browseEyebrow" hidden></p>
+        <h1 id="browseTitle">Discover</h1>
+        <p class="browse-intro" id="browseIntro">Browse anime, movies and series.</p>
+      </div>
+    </section>
+    <div class="browse-toolbar" id="browseToolbar">
+      <div class="browse-bar" id="browseBar"></div>
+      <label class="browse-sort"><i class="ri-equalizer-2-line" aria-hidden="true"></i><span>Sort</span><select id="browseSort" onchange="sortBrowse(this.value)" aria-label="Sort catalog"><option value="default">Recommended</option><option value="score">Highest rated</option><option value="az">A-Z</option><option value="year">Newest year</option></select></label>
+    </div>
+    <div id="browseRows"></div>
+    <div class="grid hidden" id="browseGrid"></div>
+    <button class="load-more hidden" id="loadMoreBtn" onclick="loadMoreBrowse()"><i class="ri-add-line" aria-hidden="true"></i> Load more</button>
+    <div class="state hidden" id="browseMoreState"><i class="ri-loader-4-line" aria-hidden="true"></i> Loading more…</div>
+    <div id="browseSentinel" aria-hidden="true" style="height:2px"></div>
+  </div>
+
+  <div id="playerView" class="page hidden-page">
+    <div class="player-shell">
+      <button class="back-btn" onclick="appBack()" aria-label="Back"><span class="back-icon"><i class="ri-arrow-left-line" aria-hidden="true"></i></span><span>Back</span></button>
+      <div class="player-layout">
+        <div>
+          <div class="video-wrap">
+            <div class="next-up hidden" id="nextUp" role="status"><small>Up next</small><strong id="nextUpLabel"></strong><div class="next-up-actions"><button type="button" id="nextUpPlay" onclick="goNextEpisode()">Play now</button><button type="button" onclick="hideNextUp()">Cancel</button></div><div class="next-up-bar"><i id="nextUpBar"></i></div></div>
+            <iframe id="player" allowfullscreen allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen; screen-wake-lock" referrerpolicy="unsafe-url"></iframe>
+          </div>
+          <div class="player-info">
+            <h1 id="mediaTitle"></h1>
+            <div class="meta" id="mediaMeta"></div>
+            <div class="player-actions"><button type="button" class="ep-toggle" id="epToggle" onclick="toggleEpisodes()" aria-expanded="false" style="display:none"><i class="ri-list-check" aria-hidden="true"></i> Episodes</button><button type="button" class="ep-toggle" id="nextBtn" onclick="goNextEpisode()" style="display:none">Next ›</button><button type="button" class="ep-toggle active" id="autoNextToggle" onclick="toggleAutoNext()" aria-pressed="true" style="display:none">Auto-next: On</button></div>
+            <div class="server-label" id="serverLabel" style="display:none">Servers</div>
+            <div class="server-row" id="serverRow"></div>
+            <div class="lang-btns" id="playerControls"></div>
+            <div class="lang-btns" id="animeSeasons"></div>
+          </div>
+        </div>
+        <aside class="player-side">
+          <div class="ep-panel" id="epPanel">
+            <h3 id="epPanelTitle">Episodes</h3>
+            <div class="ep-list" id="episodeList"></div>
+          </div>
+          <section class="up-next" aria-label="More to watch">
+            <div class="up-tabs" id="upNextTabs"></div>
+            <div class="up-list" id="upNextList"></div>
+          </section>
+        </aside>
+      </div>
+    </div>
+  </div>
+
+  <div id="detailView" class="page hidden-page">
+    <div class="detail-hero" id="detailHero">
+      <div class="detail-hero-shade"></div>
+      <div class="detail-hero-content">
+        <button class="back-btn detail-back" onclick="appBack()"><span class="back-icon"><i class="ri-arrow-left-line" aria-hidden="true"></i></span><span>Back to browsing</span></button>
+        <div class="detail-kicker" id="detailKicker">ANIMESTREAM ORIGINAL DISCOVERY</div>
+        <h1 id="detailTitle">Title</h1>
+        <div class="detail-meta" id="detailMeta"></div>
+        <p class="detail-description" id="detailDescription"></p>
+        <div class="detail-actions">
+          <button class="btn-play" id="detailPlay"><i class="ri-play-fill" aria-hidden="true"></i> Play</button>
+          <button class="btn-list" id="detailSave"><i class="ri-bookmark-line" aria-hidden="true"></i> My List</button>
+          <button class="btn-round" id="detailShare" title="Share title" aria-label="Share title"><i class="ri-share-line" aria-hidden="true"></i></button>
+        </div>
+        <div class="detail-source" id="detailSource">Artwork and metadata may be provided by external catalog services.</div>
+      </div>
+      <div class="detail-poster-wrap" id="detailPosterWrap"></div>
+    </div>
+    <div class="detail-lower">
+      <div class="detail-facts" id="detailFacts"></div>
+      <div class="detail-trailer" id="detailTrailer"></div>
+      <div class="detail-chapters" id="detailChapters"></div>
+      <div id="detailRelated"></div>
+    </div>
+  </div>
+
+  <div id="myListView" class="page hidden-page">
+    <div class="collection-hero">
+      <div class="collection-kicker">YOUR PERSONAL LIBRARY</div>
+      <h1>My List</h1>
+      <p>Your saved movies, series and anime, stored privately in this browser on this device.</p>
+      <div class="collection-count">No account · No cloud database</div>
+      <div class="collection-count" id="myListCount">0 saved titles</div>
+    </div>
+    <div class="browse-bar collection-filter" id="myListBar">
+      <button class="chip active" data-list-filter="all" onclick="filterMyList('all')">All</button>
+      <button class="chip" data-list-filter="anime" onclick="filterMyList('anime')">Anime</button>
+      <button class="chip" data-list-filter="tv" onclick="filterMyList('tv')">Series</button>
+      <button class="chip" data-list-filter="movie" onclick="filterMyList('movie')">Movies</button>
+      <button class="chip" data-list-filter="manga" onclick="filterMyList('manga')">Manga</button>
+      <button class="chip" data-list-filter="comic" onclick="filterMyList('comic')">Comics</button>
+    </div>
+    <div class="grid" id="myListGrid"></div>
+  </div>
+
+  <div id="mangaView" class="page hidden-page">
+    <section class="browse-hero" id="mangaHero" aria-label="Manga and comics">
+      <div class="browse-hero-copy">
+        <h1 id="mangaTitle">Manga &amp; Comics</h1>
+        <p class="browse-intro">Manga and classic comics to read free, with no ads in the reader.</p>
+        <div class="read-search">
+          <input id="readSearchInput" type="search" placeholder="Search manga and comics…" autocomplete="off" enterkeyhint="search" aria-label="Search manga and comics">
+          <div class="read-scope" id="readScope" role="group" aria-label="Search in"></div>
+        </div>
+        <div class="browse-hero-foot"><span id="mangaCount"></span></div>
+      </div>
+    </section>
+    <div class="browse-toolbar" id="readTabsWrap"><div class="browse-bar" id="readTabs"></div></div>
+    <div id="readGridBars" class="hidden">
+      <div class="browse-toolbar"><div class="browse-bar" id="mangaSortBar"></div></div>
+      <div class="browse-toolbar" style="padding-top:6px"><div class="browse-bar" id="mangaGenreBar"></div></div>
+    </div>
+    <div id="readRows"></div>
+    <div class="grid hidden" id="mangaGrid"></div>
+    <button class="load-more hidden" id="mangaMore" onclick="loadReadGrid(false)">Load more</button>
+  </div>
+
+  <div id="readerView" class="page hidden-page">
+    <div class="reader-bar">
+      <button class="back-btn" onclick="appBack()" aria-label="Back"><span class="back-icon"><i class="ri-arrow-left-line" aria-hidden="true"></i></span><span>Back</span></button>
+      <div class="reader-heading"><strong id="readerTitle"></strong><span id="readerChapter"></span></div>
+      <div class="reader-controls">
+        <button type="button" class="reader-btn" id="readerPrev" onclick="readerGo(-1)">‹ Prev</button>
+        <select id="readerSelect" class="reader-select" onchange="loadReaderChapter(Number(this.value))" aria-label="Chapter"></select>
+        <button type="button" class="reader-btn" id="readerNext" onclick="readerGo(1)">Next ›</button>
+        <button type="button" class="reader-btn" id="readerQuality" onclick="toggleReaderQuality()">Data saver: off</button>
+      </div>
+    </div>
+    <div class="reader-pages" id="readerPages"></div>
+    <div class="reader-end">
+      <button type="button" class="reader-btn" id="readerPrev2" onclick="readerGo(-1)">‹ Previous chapter</button>
+      <button type="button" class="reader-btn primary" id="readerNext2" onclick="readerGo(1)">Next chapter ›</button>
+    </div>
+  </div>
+
+  <div id="continueView" class="page hidden-page">
+    <div class="collection-hero continue-hero">
+      <div class="collection-kicker">PICK UP WHERE YOU LEFT OFF</div>
+      <h1>Continue Watching</h1>
+      <p>Your recent picks are saved on this device for a smoother return.</p>
+    </div>
+    <div class="grid" id="continueGrid"></div>
+  </div>
+</div>
+
+<div class="yt-drawer-backdrop" id="drawerBackdrop" onclick="closeDrawer()"></div>
+<aside class="yt-drawer" id="ytDrawer" aria-label="Site menu">
+  <div class="yt-drawer-head">
+    <div class="brand" onclick="goHome();closeDrawer()">
+      <img class="brand-badge" src="/logo.jpg" alt="" width="32" height="32">
+      <span>Anime<b>Stream</b></span>
+    </div>
+    <button class="yt-drawer-close" onclick="closeDrawer()" aria-label="Close menu"><i class="ri-close-line" aria-hidden="true"></i></button>
+  </div>
+  <button class="yt-drawer-item active" data-nav="home" onclick="nav('home');closeDrawer()"><i class="ri-home-smile-2-fill" aria-hidden="true"></i> Home</button>
+  <button class="yt-drawer-item" data-nav="movies" onclick="nav('movies');closeDrawer()"><i class="ri-film-fill" aria-hidden="true"></i> Movies</button>
+  <button class="yt-drawer-item" data-nav="series" onclick="nav('series');closeDrawer()"><i class="ri-tv-fill" aria-hidden="true"></i> Series</button>
+  <button class="yt-drawer-item" data-nav="anime" onclick="nav('anime');closeDrawer()"><i class="ri-apps-2-fill" aria-hidden="true"></i> Anime</button>
+  <button class="yt-drawer-item" data-nav="manga" onclick="nav('manga');closeDrawer()"><i class="ri-book-2-fill" aria-hidden="true"></i> Manga &amp; Comics</button>
+  <div class="yt-drawer-sep"></div>
+  <div class="yt-drawer-title">You</div>
+  <button class="yt-drawer-item" data-nav="mylist" onclick="openMyList();closeDrawer()"><i class="ri-bookmark-line" aria-hidden="true"></i> My List</button>
+  <button class="yt-drawer-item" data-nav="continue" onclick="openContinue();closeDrawer()"><i class="ri-history-line" aria-hidden="true"></i> Continue Watching</button>
+  <button class="yt-drawer-item" onclick="openSearch();closeDrawer()"><i class="ri-search-line" aria-hidden="true"></i> Search</button>
+</aside>
+
+<footer class="site-footer" id="siteFooter">
+<div class="footer-logo">
+    <img class="brand-badge" src="/logo.jpg" alt="" width="32" height="32">
+    <span>Anime<b>Stream</b></span>
+  </div>
+  <p class="footer-desc">AnimeStream does not host any media files, instead, it provides links to third-party services. Legal concerns regarding the files should be addressed directly with the respective file hosts and providers. AnimeStream bears no responsibility for the media files displayed by the providers.</p>
+</footer>
+
+<div class="search-overlay" id="searchOverlay" aria-label="Search AnimeStream">
+  <div class="search-shell">
+    <div class="search-top">
+      <div class="search-box">
+        <i class="ri-search-line search-icon" aria-hidden="true"></i>
+        <input id="searchInput" type="search" placeholder="Search anime, movies, series, manga" autocomplete="off" enterkeyhint="search" aria-label="Search titles">
+      </div>
+      <button class="search-close" onclick="closeSearch()" aria-label="Close search"><i class="ri-close-line" aria-hidden="true"></i></button>
+    </div>
+    <div class="search-filters" id="searchFilters" role="group" aria-label="Filter results">
+      <button type="button" class="active" data-f="all" onclick="setSearchFilter('all')">All</button>
+      <button type="button" data-f="movie" onclick="setSearchFilter('movie')">Movies</button>
+      <button type="button" data-f="tv" onclick="setSearchFilter('tv')">Series</button>
+      <button type="button" data-f="anime" onclick="setSearchFilter('anime')">Anime</button>
+      <button type="button" data-f="manga" onclick="setSearchFilter('manga')">Manga</button>
+      <button type="button" data-f="comic" onclick="setSearchFilter('comic')">Comics</button>
+    </div>
+    <div class="search-hint" id="searchHint"></div>
+    <div class="search-results" id="searchResults"></div>
+  </div>
+</div>
+
+
+<div id="vastAdOverlay" class="vast-ad-overlay" role="dialog" aria-modal="true" aria-label="Advertisement">
+  <div class="vast-ad-card">
+    <div class="vast-ad-top"><span id="vastAdLabel">Advertisement · Loading…</span><button id="vastAdClose" class="vast-ad-close" type="button" disabled>Ad playing</button></div>
+    <div class="vast-ad-video-wrap"><video id="vastAdVideo" class="vast-ad-video" playsinline controls preload="auto"></video><a id="vastAdClick" class="vast-ad-click" target="_blank" rel="noopener noreferrer" aria-label="Visit advertiser"></a></div>
+    <div id="vastAdStatus" class="vast-ad-status">Your show will resume after the advertisement.</div>
+  </div>
+</div>
+
+  <script defer src="/assets/js/00-config.js"></script>
+  <script defer src="/assets/js/10-catalog.js"></script>
+  <script defer src="/assets/js/20-navigation.js"></script>
+  <script defer src="/assets/js/30-player.js"></script>
+  <script defer src="/assets/js/40-library.js"></script>
+  <script defer src="/assets/js/50-startup.js"></script>
+</body>
+</html>
