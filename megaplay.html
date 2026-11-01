@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="referrer" content="unsafe-url">
+  <title>Player</title>
+  <style>
+    html, body, iframe { margin: 0; width: 100%; height: 100%; border: 0; background: #000; }
+    iframe { display: block; }
+  </style>
+</head>
+<body>
+  <!-- Pop-up shield (MegaPlay edition, rehoused).
+       Their page is served through our own /mgpx/* proxy (see server3.js locally; /api route in
+       production). The proxy strips lib/app.main.js, which is the ONLY script that:
+         - runs the "sandboxed iframe" probe that shows their big Opss! banner
+         - loads their ad engine (nekostream 1ad.js/3p.js -> llvpn.com popunder tag)
+       The remaining player (jwplayer + handle-bridge + e1-player) runs untouched, so Skip intro,
+       tap-to-see-options, quality menu and next episode still work.
+       With app.main.js gone, the sandbox hardens again with no false positives:
+         allow-scripts + allow-same-origin + allow-forms + allow-presentation
+         (no allow-popups / no allow-top-navigation / no allow-modals). -->
+  <iframe id="p" allow="autoplay; fullscreen; encrypted-media; picture-in-picture; screen-wake-lock" allowfullscreen referrerpolicy="unsafe-url"
+          sandbox="allow-scripts allow-same-origin allow-forms allow-presentation"></iframe>
+  <script>
+    const q = new URLSearchParams(location.search);
+    const lang = q.get('lang') === 'dub' ? 'dub' : 'sub';
+    const ep = q.get('ep') || '1';
+    const mal = (q.get('mal') || '').replace(/[^\d]/g, '');
+    const ani = (q.get('ani') || '').replace(/[^\d]/g, '');
+    const embed = (q.get('embed') || '').replace(/[^\d]/g, '');
+    const t = Math.max(0, Math.floor(+q.get('t') || 0));
+    let src = '';
+    if (embed) src = '/mgpx/stream/s-2/' + embed + '/' + lang;
+    else if (mal) src = '/mgpx/stream/mal/' + mal + '/' + ep + '/' + lang;
+    else if (ani) src = '/mgpx/stream/ani/' + ani + '/' + ep + '/' + lang;
+    const f = document.getElementById('p');
+    if (src) f.src = src;
+
+    // Watchdog: nothing in the stripped page points off-origin, but defense in depth costs nothing:
+    // if any future bundle ever navigates this frame away to an ad page, put the stream straight back.
+    // The rehoused page is same-origin with us, so its window.location.origin is always readable.
+    // Progress survives: MegaPlay logs your position and the site remembers the episode, so a restore
+    // costs seconds, not episodes.
+    const ORIGIN = location.origin;
+    const bootTime = Date.now();
+    let lastRestore = 0;
+    function frameOriginOk(win) {
+      try { return win.location.origin === ORIGIN; }
+      catch (_) { return false; } // unreadable origin -> suspicious, restore the stream
+    }
+    f.addEventListener('load', () => {
+      if (!src) return;
+      if (Date.now() - bootTime < 2500) return;             // the initial embed page load itself
+      const now = Date.now();
+      if (now - lastRestore < 15000) return;                // no restore loops
+      let onOrigin = true;
+      try { onOrigin = f.contentWindow.location.origin === ORIGIN; } catch (_) { onOrigin = false; }
+      if (onOrigin) { try { console.warn('[shield] extra same-origin load (watching, not restoring)'); } catch (_) {} return; }
+      lastRestore = now;
+      console.warn('[shield] MegaPlay was swapped for an ad page; restoring the stream');
+      try { f.src = src; } catch (_) {}
+    });
+
+    // Pass the player's own messages (episode finished, progress) up to the site so it can auto-play the next episode.
+    window.addEventListener('message', function (e) {
+      if (e.source === f.contentWindow) {
+        try { parent.postMessage(e.data, '*'); } catch (_) {}
+      }
+    });
+
+    // Optional resume: ?t=<seconds> seeks their player once it reports ready (their handle-bridge
+    // accepts {event:"seek"} from the parent). The site uses this to restore our own saved position.
+    if (t > 0) {
+      let seeked = false;
+      window.addEventListener('message', function h(e) {
+        if (e.source !== f.contentWindow || seeked) return;
+        const s = typeof e.data === 'string' ? e.data : '';
+        if (s.indexOf('PLAYER_READY') >= 0) {
+          seeked = true;
+          setTimeout(function () {
+            try { f.contentWindow.postMessage({ event: 'seek', time: t }, '*'); } catch (_) {}
+          }, 1200);
+        }
+      });
+      setTimeout(function () { if (!seeked) { try { f.contentWindow.postMessage({ event: 'seek', time: t }, '*'); } catch (_) {} } }, 8000);
+    }
+  </script>
+</body>
+</html>
