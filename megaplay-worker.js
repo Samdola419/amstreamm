@@ -63,7 +63,7 @@ function transformHTML(html) {
 // times after boot; if the page is telling the viewer it has nothing for this
 // title, posts one mp-miss message up so the site hops to the next server.
 function mpMissProbe() {
-  return '(function(){var marks=["not available","no source","no results","no episode","no stream available","could not find","does not exist","title not found","content not found","no servers"].map(function(x){return x});function txt(){try{return (document.body?document.body.innerText:"").toLowerCase()}catch(e){return ""}}function scan(){var t=txt();if(!t)return false;for(var i=0;i<marks.length;i++){if(t.indexOf(marks[i])>=0)return true}return false}var hit=false;function run(){if(hit)return;if(scan()){hit=true;try{parent.postMessage({type:"mp-miss"},"*")}catch(e){}}}[3000,7000,13000].forEach(function(d){setTimeout(run,d)})})();';
+  return '(function(){var marks=["not available","no source","no results","no episode","no stream available","could not find","does not exist","doesn\'t exist","something went wrong","error code: 404","title not found","content not found","no servers"].map(function(x){return x});function txt(){try{return (document.body?document.body.innerText:"").toLowerCase()}catch(e){return ""}}function scan(){var t=txt();if(!t)return false;for(var i=0;i<marks.length;i++){if(t.indexOf(marks[i])>=0)return true}return false}var hit=false;function run(){if(hit)return;if(scan()){hit=true;try{parent.postMessage({type:"mp-miss"},"*")}catch(e){}}}[3000,7000,13000].forEach(function(d){setTimeout(run,d)})})();';
 }
 
 function rewriteM3U8(body, baseUrl) {
@@ -94,6 +94,17 @@ function rewriteVTT(text, baseUrl) {
   }).join('\n');
 }
 
+// Not an open proxy: https only, public hostnames only, and only the media paths MegaPlay's own
+// player uses (/anime /movie /tv /series) or megaplay.buzz itself.
+function mediaAllowed(u) {
+  let x;
+  try { x = new URL(u); } catch (e) { return false; }
+  if (x.protocol !== 'https:') return false;
+  const h = x.hostname.toLowerCase();
+  if (!h.includes('.') || h.includes(':') || /^\d+\.\d+\.\d+\.\d+$/.test(h) || /\.(local|internal|localhost)$/.test(h)) return false;
+  return /^\/(anime|movie|tv|series)\//i.test(x.pathname) || h === 'megaplay.buzz' || h.endsWith('.megaplay.buzz');
+}
+
 export default {
   async fetch(request) {
     const url = new URL(request.url);
@@ -103,6 +114,7 @@ export default {
     if (path === '/mgpx-media/' || path === '/mgpx-media') {
       const u = url.searchParams.get('u') || '';
       if (!/^https?:\/\//i.test(u)) return new Response('bad url', { status: 400 });
+      if (!mediaAllowed(u)) return new Response('host not allowed', { status: 403 });
       const headers = { 'User-Agent': UA, 'Referer': MEDIA_REFERER, 'Accept': '*/*' };
       const range = request.headers.get('range');
       if (range) headers['Range'] = range;
