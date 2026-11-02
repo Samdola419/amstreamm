@@ -78,7 +78,7 @@ function buildHeroFrame(id) {
 }
 
 window.prefetchHeroTrailer = function (h) {
-  if (isPhone() || heroPaused) return; // one player at a time on phones
+  if (heroPaused) return; // preload the next clip on phones too, so the swap is instant
   const stage = $('heroTrailerBox');
   if (!stage || !h || document.hidden || (window.currentScreenId && currentScreenId !== 'homeView') || heroItemsLength() < 2) return;
   const token = heroToken;
