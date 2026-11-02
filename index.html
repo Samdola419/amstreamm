@@ -42,7 +42,7 @@
       if (a) document.documentElement.setAttribute('data-season', 'halloween');
     } catch (e) {}
   </script>
-  <link rel="stylesheet" href="/assets/css/site.css?v=14d">
+  <link rel="stylesheet" href="/assets/css/site.css?v=15">
 
 </head>
 <body>
@@ -376,6 +376,7 @@
       <div class="search-box">
         <i class="ri-search-line search-icon" aria-hidden="true"></i>
         <input id="searchInput" type="search" placeholder="Search anime, movies, series" autocomplete="off" enterkeyhint="search" aria-label="Search titles">
+        <button type="button" class="search-clear" id="searchClear" onclick="clearSearchInput()" aria-label="Clear search" hidden><i class="ri-close-circle-fill" aria-hidden="true"></i></button>
       </div>
       <button class="search-close" onclick="closeSearch()" aria-label="Close search"><i class="ri-close-line" aria-hidden="true"></i></button>
     </div>
@@ -385,6 +386,7 @@
       <button type="button" data-f="tv" onclick="setSearchFilter('tv')">Series</button>
       <button type="button" data-f="anime" onclick="setSearchFilter('anime')">Anime</button>
     </div>
+    <div class="search-idle" id="searchIdle"></div>
     <div class="search-hint" id="searchHint"></div>
     <div class="search-results" id="searchResults"></div>
   </div>
@@ -399,21 +401,21 @@
   </div>
 </div>
 
-  <script src="/assets/js/data.js?v=14d"></script>
-  <script src="/assets/js/ui.js?v=14d"></script>
-  <script src="/assets/js/catalog.js?v=14d"></script>
-  <script src="/assets/js/previews.js?v=14d"></script>
-  <script src="/assets/js/search.js?v=14d"></script>
-  <script src="/assets/js/player.js?v=14d"></script>
-  <script src="/assets/js/titles.js?v=14d"></script>
-  <script src="/assets/js/details.js?v=14d"></script>
-  <script src="/assets/js/library.js?v=14d"></script>
-  <script src="/assets/js/router.js?v=14d"></script>
-  <script src="/assets/js/ads-cards.js?v=14d"></script>
-  <script src="/assets/js/profile.js?v=14d"></script>
+  <script src="/assets/js/data.js?v=15"></script>
+  <script src="/assets/js/ui.js?v=15"></script>
+  <script src="/assets/js/catalog.js?v=15"></script>
+  <script src="/assets/js/previews.js?v=15"></script>
+  <script src="/assets/js/search.js?v=15"></script>
+  <script src="/assets/js/player.js?v=15"></script>
+  <script src="/assets/js/titles.js?v=15"></script>
+  <script src="/assets/js/details.js?v=15"></script>
+  <script src="/assets/js/library.js?v=15"></script>
+  <script src="/assets/js/router.js?v=15"></script>
+  <script src="/assets/js/ads-cards.js?v=15"></script>
+  <script src="/assets/js/profile.js?v=15"></script>
   <script src="/assets/js/auth-config.js?v=2d"></script>
   <script src="/assets/js/auth.js?v=2d"></script>
-  <script src="/assets/js/boot.js?v=14d"></script>
+  <script src="/assets/js/boot.js?v=15"></script>
 
 </body>
 </html>
