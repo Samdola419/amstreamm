@@ -153,7 +153,20 @@ async function page(req, res) {
     init.body = typeof req.body === 'string' || Buffer.isBuffer(req.body) ? req.body : JSON.stringify(req.body);
     if (req.headers['content-type']) fh['Content-Type'] = req.headers['content-type'];
   }
-  const up = await fetch(target, init).catch(() => null);
+  let up = await fetch(target, init).catch(() => null);
+  // MegaPlay sometimes answers server-to-server player-page requests with its own 404 page.
+  // Retry the page with other header sets (browser-like navigation) before giving up.
+  if (isDoc && req.method === 'GET' && up && (up.status === 404 || up.status === 403)) {
+    const variants = [
+      { 'User-Agent': UA, 'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8', 'Accept-Language': 'en-US,en;q=0.9', 'Upgrade-Insecure-Requests': '1' },
+      { 'User-Agent': UA, 'Accept': 'text/html,*/*', 'Accept-Language': 'en-US,en;q=0.9', 'Referer': MEDIA_REFERER, 'Sec-Fetch-Site': 'cross-site', 'Sec-Fetch-Mode': 'navigate', 'Sec-Fetch-Dest': 'iframe' },
+      { 'User-Agent': UA, 'Accept': '*/*', 'Referer': 'https://' + (req.headers.host || 'localhost') + '/' }
+    ];
+    for (const h of variants) {
+      const r = await fetch(target, { headers: h, redirect: 'follow' }).catch(() => null);
+      if (r && r.status < 400) { up = r; break; }
+    }
+  }
   if (!up) return res.status(502).send('proxy error');
   const ct = (up.headers.get('content-type') || 'application/octet-stream').split(';')[0].toLowerCase();
   const textual = /^(text\/html|text\/css|text\/javascript|application\/javascript|application\/x-javascript|application\/json|text\/plain)/.test(ct);
@@ -171,8 +184,33 @@ async function page(req, res) {
   res.status(up.status).send(body);
 }
 
+// Open  https://<your-site>/mgpx-dbg  in a browser: shows what MegaPlay returns to Vercel.
+async function debugReport(res) {
+  const probes = [
+    ['page, MegaPlay-style headers', UP + '/stream/mal/21/1/sub', { 'User-Agent': UA, 'Referer': MEDIA_REFERER, 'Sec-Fetch-Dest': 'iframe', 'Sec-Fetch-Mode': 'navigate', 'Sec-Fetch-Site': 'same-origin' }],
+    ['page, browser-like headers, no referer', UP + '/stream/mal/21/1/sub', { 'User-Agent': UA, 'Accept': 'text/html,*/*', 'Upgrade-Insecure-Requests': '1' }],
+    ['page by AniList id', UP + '/stream/ani/21/1/sub', { 'User-Agent': UA, 'Referer': MEDIA_REFERER }],
+    ['site root', UP + '/', { 'User-Agent': UA }]
+  ];
+  let out = 'MegaPlay shield debug (Vercel)\n==============================\n';
+  for (const [name, u, h] of probes) {
+    out += '\n## ' + name + '\n' + u + '\n';
+    try {
+      const r = await fetch(u, { headers: h, redirect: 'follow' });
+      const body = (await r.text()).replace(/\s+/g, ' ');
+      out += 'status: ' + r.status + '\n';
+      for (const k of ['content-type', 'server', 'cf-ray', 'cf-mitigated', 'location']) if (r.headers.get(k)) out += k + ': ' + r.headers.get(k) + '\n';
+      out += 'body: ' + body.slice(0, 500) + '\n';
+    } catch (e) { out += 'ERROR: ' + String(e).slice(0, 200) + '\n'; }
+  }
+  res.setHeader('content-type', 'text/plain; charset=utf-8');
+  res.setHeader('cache-control', 'no-store');
+  return res.status(200).send(out);
+}
+
 export default async function handler(req, res) {
   try {
+    if (one(req.query?.__dbg)) return await debugReport(res);
     if (one(req.query?.__m)) return await media(req, res);
     return await page(req, res);
   } catch (e) {
