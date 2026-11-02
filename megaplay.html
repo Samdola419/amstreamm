@@ -28,7 +28,7 @@
     //  - local dev (server3.js): '/mgpx'                       (same origin as this page)
     //  - production Cloudflare worker: 'https://<your-worker>.workers.dev/mgpx'
     //    (see CLOUDFLARE-SETUP.md — deploy megaplay-worker.js once, then paste its URL here)
-    const WORKER_BASE = 'https://soft-cell-f315.sammy12dop.workers.dev/mgpx';
+    const WORKER_BASE = '/mgpx';
     const q = new URLSearchParams(location.search);
     const lang = q.get('lang') === 'dub' ? 'dub' : 'sub';
     const ep = q.get('ep') || '1';
