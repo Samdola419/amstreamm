@@ -427,7 +427,7 @@ function renderHero(i) {
 function startHeroRotate() {
   clearInterval(heroTimer);
   if (heroItems.length < 2) return;
-  heroTimer = setInterval(() => renderHero(heroIdx + 1), window.matchMedia('(max-width: 860px)').matches ? 15000 : 10000); // slower swap on phones: each swap loads a new player
+  heroTimer = setInterval(() => renderHero(heroIdx + 1), 10000); // 10s per slide on every device; the next clip is preloaded while this one plays
 }
 
 /* Hero swipe (touch + mouse drag) */
