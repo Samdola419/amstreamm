@@ -28,7 +28,14 @@
     //  - local dev (server3.js): '/mgpx'                       (same origin as this page)
     //  - production Cloudflare worker: 'https://<your-worker>.workers.dev/mgpx'
     //    (see CLOUDFLARE-SETUP.md — deploy megaplay-worker.js once, then paste its URL here)
-    const WORKER_BASE = '/mgpx';
+    // Primary: the Cloudflare Worker (free, keeps video bytes off Vercel).
+    // Fallback: the same proxy on this site (api/mgpx.js). If MegaPlay answers the Worker with its
+    // 404 page, the mirrored page reports "mp-miss" and we switch to the fallback for this and later plays.
+    const PRIMARY_BASE = 'https://soft-cell-f315.sammy12dop.workers.dev/mgpx';
+    const FALLBACK_BASE = '/mgpx';
+    let useFallback = false;
+    try { useFallback = localStorage.getItem('mp.useFallback') === '1'; } catch (_) {}
+    let WORKER_BASE = useFallback ? FALLBACK_BASE : PRIMARY_BASE;
     const q = new URLSearchParams(location.search);
     const lang = q.get('lang') === 'dub' ? 'dub' : 'sub';
     const ep = q.get('ep') || '1';
@@ -44,9 +51,11 @@
       .replace(/[^\w.\/:?=&%~+-]/g, '');
     const GENERIC_OK = /^https:\/\/[a-z0-9.-]*\b(vidspark\.to|vidsrc\.link|vidsrc\.pm|player\.videasy\.to|vid-src\.top|vidsrc\.sh)\//i;
     if (generic && GENERIC_OK.test(generic)) src = generic;
-    else if (embed) src = WORKER_BASE + '/stream/s-2/' + embed + '/' + lang;
-    else if (mal) src = WORKER_BASE + '/stream/mal/' + mal + '/' + ep + '/' + lang;
-    else if (ani) src = WORKER_BASE + '/stream/ani/' + ani + '/' + ep + '/' + lang;
+    const buildSrc = base =>
+      embed ? base + '/stream/s-2/' + embed + '/' + lang
+      : mal ? base + '/stream/mal/' + mal + '/' + ep + '/' + lang
+      : ani ? base + '/stream/ani/' + ani + '/' + ep + '/' + lang : '';
+    if (!src) src = buildSrc(WORKER_BASE);
     const f = document.getElementById('p');
     if (src) f.src = src;
 
@@ -75,6 +84,16 @@
     // Pass the player's own messages (episode finished, progress) up to the site so it can auto-play the next episode.
     window.addEventListener('message', function (e) {
       if (e.source === f.contentWindow) {
+        // Worker got MegaPlay's 404 page: retry once through this site's own proxy instead of telling the app.
+        if (e.data && e.data.type === 'mp-miss' && !generic && !useFallback && WORKER_BASE !== FALLBACK_BASE) {
+          useFallback = true; WORKER_BASE = FALLBACK_BASE;
+          try { localStorage.setItem('mp.useFallback', '1'); } catch (_) {}
+          src = buildSrc(WORKER_BASE);
+          try { EXPECTED = new URL(src, location.href).origin; } catch (_) { EXPECTED = location.origin; }
+          lastRestore = Date.now();
+          f.src = src;
+          return;
+        }
         try { parent.postMessage(e.data, '*'); } catch (_) {}
       }
     });
