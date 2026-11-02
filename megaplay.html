@@ -32,7 +32,7 @@
     // Fallback: the same proxy on this site (api/mgpx.js). If MegaPlay answers the Worker with its
     // 404 page, the mirrored page reports "mp-miss" and we switch to the fallback for this and later plays.
     const PRIMARY_BASE = 'https://soft-cell-f315.sammy12dop.workers.dev/mgpx';
-    const FALLBACK_BASE = '/mgpx';
+    const FALLBACK_BASE = PRIMARY_BASE;
     let useFallback = false;
     try { useFallback = localStorage.getItem('mp.useFallback') === '1'; } catch (_) {}
     let WORKER_BASE = useFallback ? FALLBACK_BASE : PRIMARY_BASE;
