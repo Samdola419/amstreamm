@@ -1568,3 +1568,53 @@ html.auth-enabled .login-card h2.cloud-only { display: block; }
   .card { contain: layout style; }
   .login-backdrop { background: rgba(0,0,0,.82); }
 }
+
+/* ============================================================ search polish (v15) */
+/* Top-bar search: roomier pill with a leading icon feel and a clear focus ring */
+.nav-search { height: 40px; border-radius: 999px; padding: 0 5px 0 16px; background: rgba(255,255,255,.07); border-color: rgba(255,255,255,.14); transition: border-color .18s ease, background .18s ease, box-shadow .18s ease; }
+.nav-search:hover { background: rgba(255,255,255,.1); }
+.nav-search:focus-within { border-color: var(--accent); background: rgba(255,255,255,.1); box-shadow: 0 0 0 3px rgba(255,0,0,.14); }
+.nav-search button { background: var(--accent-grad); width: 32px; height: 32px; }
+.nav-search button:hover { filter: brightness(1.12); background: var(--accent-grad); }
+
+/* Overlay */
+.search-overlay { background: radial-gradient(900px 420px at 50% -80px, rgba(255,0,60,.10), transparent 70%), rgba(6,6,8,.94); }
+.search-shell { padding-top: calc(env(safe-area-inset-top, 0px) + 36px); }
+.search-box input { height: 60px; padding: 0 52px 0 56px; background: rgba(255,255,255,.07); border: 1px solid rgba(255,255,255,.16); box-shadow: 0 10px 34px rgba(0,0,0,.45); font-size: 1.08rem; }
+.search-box input::-webkit-search-cancel-button { display: none; }
+.search-box .search-icon { left: 22px; }
+.search-box input:focus ~ .search-icon, .search-box:focus-within .search-icon { color: var(--accent); }
+.search-clear { position: absolute; right: 14px; top: 50%; transform: translateY(-50%); width: 34px; height: 34px; border-radius: 50%; display: grid; place-items: center; color: rgba(255,255,255,.55); font-size: 1.3rem; transition: color .15s; }
+.search-clear:hover { color: #fff; }
+.search-clear[hidden] { display: none; }
+.search-close { height: 60px; width: 48px; }
+.search-filters { margin-top: 16px; padding: 0 4px; }
+.search-filters button { padding: 8px 18px; background: rgba(255,255,255,.06); }
+
+/* Idle: recent + popular chips */
+.search-idle { padding: 22px 4px 0; }
+.search-idle[hidden] { display: none; }
+.search-idle-head { display: flex; justify-content: space-between; align-items: center; margin: 18px 0 10px; font-size: .74rem; font-weight: 800; letter-spacing: .09em; text-transform: uppercase; color: var(--muted); }
+.search-idle-head:first-child { margin-top: 0; }
+.search-idle-head button { font-size: .76rem; font-weight: 700; letter-spacing: 0; text-transform: none; color: var(--muted); }
+.search-idle-head button:hover { color: #fff; }
+.search-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.search-chip { display: inline-flex; align-items: center; border-radius: 999px; background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.1); transition: background .15s, border-color .15s; }
+.search-chip:hover { background: rgba(255,255,255,.12); border-color: rgba(255,255,255,.24); }
+.search-chip button { display: inline-flex; align-items: center; gap: 7px; padding: 9px 15px; color: var(--text); font-size: .86rem; font-weight: 600; }
+.search-chip button i { color: var(--muted); font-size: 1rem; }
+.search-chip.recent button:first-child { padding-right: 6px; }
+.search-chip .x { padding: 9px 11px 9px 4px; }
+.search-chip .x i { font-size: .95rem; }
+.search-chip .x:hover i { color: #fff; }
+
+/* Loading skeleton + empty state */
+.search-skel-poster, .search-skel-line { background: linear-gradient(100deg, rgba(255,255,255,.05) 30%, rgba(255,255,255,.12) 50%, rgba(255,255,255,.05) 70%); background-size: 220% 100%; animation: searchShimmer 1.2s linear infinite; border-radius: 10px; }
+.search-skel-poster { aspect-ratio: 2/3; }
+.search-skel-line { height: 12px; margin-top: 10px; width: 70%; }
+@keyframes searchShimmer { from { background-position: 120% 0; } to { background-position: -120% 0; } }
+.search-empty { grid-column: 1 / -1; display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 56px 12px; text-align: center; color: var(--muted); }
+.search-empty i { font-size: 2.4rem; color: rgba(255,255,255,.3); }
+.search-empty b { color: var(--text); font-size: 1.05rem; }
+.search-hint { margin-top: 18px; padding: 0 4px; }
+@media (max-width: 640px) { .search-box input { height: 54px; font-size: 1rem; } .search-close { height: 54px; } }
