@@ -5,6 +5,7 @@
     "api/mgpx.js": { "maxDuration": 60 }
   },
   "rewrites": [
+    { "source": "/mgpx-dbg", "destination": "/api/mgpx?__dbg=1" },
     { "source": "/mgpx-media/:rest*", "destination": "/api/mgpx?__m=1" },
     { "source": "/mgpx/:path*", "destination": "/api/mgpx?__p=/:path*" },
     { "source": "/mgpx", "destination": "/api/mgpx?__p=/" },
