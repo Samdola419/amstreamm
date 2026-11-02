@@ -37,7 +37,7 @@ function rewriteText(s) {
     .replace(/https:\/\/megaplay\.buzz/g, '/mgpx');
 }
 function mpMissProbe() {
-  return '(function(){var marks=["not available","no source","no results","no episode","no stream available","could not find","does not exist","title not found","content not found","no servers"];function txt(){try{return (document.body?document.body.innerText:"").toLowerCase()}catch(e){return ""}}function scan(){var t=txt();if(!t)return false;for(var i=0;i<marks.length;i++){if(t.indexOf(marks[i])>=0)return true}return false}var hit=false;function run(){if(hit)return;if(scan()){hit=true;try{parent.postMessage({type:"mp-miss"},"*")}catch(e){}}}[3000,7000,13000].forEach(function(d){setTimeout(run,d)})})();';
+  return '(function(){var marks=["not available","no source","no results","no episode","no stream available","could not find","does not exist","doesn\'t exist","something went wrong","error code: 404","title not found","content not found","no servers"];function txt(){try{return (document.body?document.body.innerText:"").toLowerCase()}catch(e){return ""}}function scan(){var t=txt();if(!t)return false;for(var i=0;i<marks.length;i++){if(t.indexOf(marks[i])>=0)return true}return false}var hit=false;function run(){if(hit)return;if(scan()){hit=true;try{parent.postMessage({type:"mp-miss"},"*")}catch(e){}}}[3000,7000,13000].forEach(function(d){setTimeout(run,d)})})();';
 }
 function transformHTML(html) {
   html = removeInlineScript(html, '__MegaCdnHealthEarly');
@@ -79,9 +79,21 @@ function rewriteVTT(text, base) {
 
 const one = v => Array.isArray(v) ? v[0] : v;
 
+// Not an open proxy: https only, public hostnames only, and only the media paths MegaPlay's own
+// player uses (/anime /movie /tv /series) or megaplay.buzz itself.
+function mediaAllowed(u) {
+  let x;
+  try { x = new URL(u); } catch (e) { return false; }
+  if (x.protocol !== 'https:') return false;
+  const h = x.hostname.toLowerCase();
+  if (!h.includes('.') || h.includes(':') || /^\d+\.\d+\.\d+\.\d+$/.test(h) || /\.(local|internal|localhost)$/.test(h)) return false;
+  return /^\/(anime|movie|tv|series)\//i.test(x.pathname) || h === 'megaplay.buzz' || h.endsWith('.megaplay.buzz');
+}
+
 async function media(req, res) {
   const u = String(one(req.query?.u) || '');
   if (!/^https?:\/\//i.test(u)) return res.status(400).send('bad url');
+  if (!mediaAllowed(u)) return res.status(403).send('host not allowed');
   const headers = { 'User-Agent': UA, 'Referer': MEDIA_REFERER, 'Accept': '*/*' };
   if (req.headers['range']) headers['Range'] = req.headers['range'];
   const up = await fetch(u, { headers, redirect: 'follow' }).catch(() => null);
