@@ -28,14 +28,11 @@ const TV_SERVERS = [
   { name: 'Videasy', url: (id,s,e) => `https://player.videasy.to/tv/${id}/${s}/${e}` },
 ];
 
-// Every anime plays on MegaPlay (through the /megaplay.html shield). No other server is offered or auto-tried.
+// Anime playback uses AniPub's documented direct iframe links. Anime URLs are
+// loaded from AniPub in titles.js and passed straight to the main player iframe;
+// they do not pass through the MegaPlay/Vercel/Cloudflare proxy.
 const ANIME_SERVERS = [
-  { name: 'MegaPlay', url: (m, ep, lang) => {
-      const q = new URLSearchParams({ ep: String(ep), lang: lang || 'sub' });
-      if (m.mal_id) q.set('mal', String(m.mal_id));
-      if (m.ani_id) q.set('ani', String(m.ani_id));
-      return `/megaplay.html?${q.toString()}`;
-    } },
+  { name: 'AniPub', url: (m, ep) => Array.isArray(m.anipubEpisodes) ? (m.anipubEpisodes[ep - 1] || '') : '' },
 ];
 const ANIME_GENRES = ['Action','Romance','Comedy','Drama','Fantasy','Horror','Sci-Fi','Slice of Life','Sports','Supernatural','Mystery','Adventure'];
 const MOVIE_CATS = ['New','Popular','Action','Comedy','Adventure','Animation','Sci-Fi','Fantasy','Family','Drama'];
@@ -133,9 +130,9 @@ const Q_ANIME_POP = `query($page:Int){Page(page:$page,perPage:24){pageInfo{hasNe
 const Q_ANIME_GENRE = `query($page:Int,$genre:String){Page(page:$page,perPage:24){pageInfo{hasNextPage} media(type:ANIME,genre:$genre,sort:POPULARITY_DESC,isAdult:false){id idMal title{romaji english} coverImage{large} bannerImage averageScore genres episodes seasonYear trailer{id site}}}}`;
 const Q_ANIME_GENRE_ADULT = `query($page:Int,$genre:String){Page(page:$page,perPage:24){pageInfo{hasNextPage} media(type:ANIME,genre:$genre,sort:POPULARITY_DESC,isAdult:true){id idMal title{romaji english} coverImage{large} bannerImage averageScore genres episodes seasonYear trailer{id site}}}}`;
 const Q_ANIME_SEARCH = `query($q:String){Page(page:1,perPage:30){media(type:ANIME,search:$q,sort:SEARCH_MATCH){id idMal title{romaji english} coverImage{large} bannerImage averageScore genres episodes seasonYear trailer{id site}}}}`;
-const Q_ANIME_REL = `query($id:Int){Media(id:$id,type:ANIME){id idMal title{romaji english} status episodes seasonYear format relations{edges{relationType node{id idMal type format status title{romaji english} episodes seasonYear}}}}}`;
+const Q_ANIME_REL = `query($id:Int){Media(id:$id,type:ANIME){id idMal title{romaji english native} status episodes seasonYear format relations{edges{relationType node{id idMal type format status title{romaji english native} synonyms episodes seasonYear}}}}}`;
 const Q_ANIME_RECS = `query($id:Int){Media(id:$id,type:ANIME){recommendations(perPage:14,sort:RATING_DESC){nodes{mediaRecommendation{id idMal title{romaji english} coverImage{large} bannerImage averageScore genres episodes seasonYear}}}}}`;
-const Q_ANIME_INFO = `query($id:Int){Media(id:$id,type:ANIME){id idMal title{romaji english} status episodes averageScore genres seasonYear description(asHtml:false) coverImage{large} bannerImage nextAiringEpisode{timeUntilAiring episode}}}`;
+const Q_ANIME_INFO = `query($id:Int){Media(id:$id,type:ANIME){id idMal title{romaji english native} synonyms status episodes averageScore genres seasonYear description(asHtml:false) coverImage{large} bannerImage nextAiringEpisode{timeUntilAiring episode}}}`;
 
 function titleOf(m) { return m.title?.english || m.title?.romaji || m.title || m.name || 'Untitled'; }
 function stripHtml(s) { return (s || '').replace(/<[^>]+>/g, '').replace(/\n+/g, ' ').trim(); }
