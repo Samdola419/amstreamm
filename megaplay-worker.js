@@ -63,7 +63,7 @@ function transformHTML(html) {
 // times after boot; if the page is telling the viewer it has nothing for this
 // title, posts one mp-miss message up so the site hops to the next server.
 function mpMissProbe() {
-  return '(function(){var marks=["not available","no source","no results","no episode","no stream available","could not find","does not exist","doesn\'t exist","something went wrong","error code: 404","title not found","content not found","no servers"].map(function(x){return x});function txt(){try{return (document.body?document.body.innerText:"").toLowerCase()}catch(e){return ""}}function scan(){var t=txt();if(!t)return false;for(var i=0;i<marks.length;i++){if(t.indexOf(marks[i])>=0)return true}return false}var hit=false;function run(){if(hit)return;if(scan()){hit=true;try{parent.postMessage({type:"mp-miss"},"*")}catch(e){}}}[3000,7000,13000].forEach(function(d){setTimeout(run,d)})})();';
+  return '(function(){var marks=["not available","no source","no results","no episode","no stream available","could not find","does not exist","title not found","content not found","no servers"].map(function(x){return x});function txt(){try{return (document.body?document.body.innerText:"").toLowerCase()}catch(e){return ""}}function scan(){var t=txt();if(!t)return false;for(var i=0;i<marks.length;i++){if(t.indexOf(marks[i])>=0)return true}return false}var hit=false;function run(){if(hit)return;if(scan()){hit=true;try{parent.postMessage({type:"mp-miss"},"*")}catch(e){}}}[3000,7000,13000].forEach(function(d){setTimeout(run,d)})})();';
 }
 
 function rewriteM3U8(body, baseUrl) {
@@ -94,50 +94,15 @@ function rewriteVTT(text, baseUrl) {
   }).join('\n');
 }
 
-// Not an open proxy: https only, public hostnames only, and only the media paths MegaPlay's own
-// player uses (/anime /movie /tv /series) or megaplay.buzz itself.
-function mediaAllowed(u) {
-  let x;
-  try { x = new URL(u); } catch (e) { return false; }
-  if (x.protocol !== 'https:') return false;
-  const h = x.hostname.toLowerCase();
-  if (!h.includes('.') || h.includes(':') || /^\d+\.\d+\.\d+\.\d+$/.test(h) || /\.(local|internal|localhost)$/.test(h)) return false;
-  return /^\/(anime|movie|tv|series)\//i.test(x.pathname) || h === 'megaplay.buzz' || h.endsWith('.megaplay.buzz');
-}
-
-// Open  https://<worker>/dbg  in a browser: shows what MegaPlay returns to this Worker.
-async function debugReport() {
-  const probes = [
-    ['page, MegaPlay-style headers', UP + '/stream/mal/21/1/sub', { 'User-Agent': UA, 'Referer': MEDIA_REFERER, 'Sec-Fetch-Dest': 'iframe', 'Sec-Fetch-Mode': 'navigate', 'Sec-Fetch-Site': 'same-origin' }],
-    ['page, browser-like headers, no referer', UP + '/stream/mal/21/1/sub', { 'User-Agent': UA, 'Accept': 'text/html,*/*', 'Upgrade-Insecure-Requests': '1' }],
-    ['page by AniList id', UP + '/stream/ani/21/1/sub', { 'User-Agent': UA, 'Referer': MEDIA_REFERER }],
-    ['site root', UP + '/', { 'User-Agent': UA }]
-  ];
-  let out = 'MegaPlay shield debug\n=====================\n';
-  for (const [name, u, h] of probes) {
-    out += '\n## ' + name + '\n' + u + '\n';
-    try {
-      const r = await fetch(u, { headers: h, redirect: 'follow' });
-      const body = (await r.text()).replace(/\s+/g, ' ');
-      out += 'status: ' + r.status + '\n';
-      for (const k of ['content-type', 'server', 'cf-ray', 'cf-mitigated', 'location']) if (r.headers.get(k)) out += k + ': ' + r.headers.get(k) + '\n';
-      out += 'body: ' + body.slice(0, 500) + '\n';
-    } catch (e) { out += 'ERROR: ' + String(e).slice(0, 200) + '\n'; }
-  }
-  return new Response(out, { headers: { 'content-type': 'text/plain; charset=utf-8', 'cache-control': 'no-store' } });
-}
-
 export default {
   async fetch(request) {
     const url = new URL(request.url);
     const path = decodeURIComponent(url.pathname);
-    if (path === '/dbg') return debugReport();
 
     // ---------- media relay ----------
     if (path === '/mgpx-media/' || path === '/mgpx-media') {
       const u = url.searchParams.get('u') || '';
       if (!/^https?:\/\//i.test(u)) return new Response('bad url', { status: 400 });
-      if (!mediaAllowed(u)) return new Response('host not allowed', { status: 403 });
       const headers = { 'User-Agent': UA, 'Referer': MEDIA_REFERER, 'Accept': '*/*' };
       const range = request.headers.get('range');
       if (range) headers['Range'] = range;
@@ -166,10 +131,26 @@ export default {
       return new Response(up.body, { status: up.status, headers: h });
     }
 
-    // ---------- page / API mirror ----------
+    // ---------- embed route ----------
+    // Some browsers, extensions or networks treat third-party player pages as suspect and
+    // re-point them seconds after load (the classic symptom is a black iframe). /mgpx-embed?u=
+    // serves the SAME mirrored player, but from a plain page URL on OUR origin, so nothing out
+    // there sees a naked third-party embed path to kick around. It is a real server route (the
+    // upstream page is fetched and transformed below) — same behavior, same player.
+    // The viewer-visible behavior is identical (skip intro, quality menu, next episode…).
     let target = null;
-    if (path === '/mgpx' || path.startsWith('/mgpx/')) target = UP + url.pathname.slice('/mgpx'.length) + url.search;
-    else if (/^\/(lib|stream|images)\//.test(path) || path === '/domains' || path.startsWith('/domains?') || path === '/check_domain.json') target = UP + url.pathname + url.search;
+    if (path === '/mgpx-embed' || path.startsWith('/mgpx-embed/') || path.startsWith('/mgpx-embed?')) {
+      const u = url.searchParams.get('u') || '';
+      if (/^\/mgpx\/[A-Za-z0-9._~:/-]+(\?[A-Za-z0-9._%~:?&=+-]+)?$/.test(u)) {
+        // serve the mirrored page directly at /mgpx-embed; drop the 'u' param from the inner query
+        const inner = url.search.replace(/^[^&]*u=[^&]*&?/, '').replace(/^\?/, '');
+        target = UP + u.slice('/mgpx'.length) + (inner ? '?' + inner : '');
+      }
+    }
+
+    // ---------- page / API mirror ----------
+    if (!target && (path === '/mgpx' || path.startsWith('/mgpx/'))) target = UP + url.pathname.slice('/mgpx'.length) + url.search;
+    else if (!target && (/^\/(lib|stream|images)\//.test(path) || path === '/domains' || path.startsWith('/domains?') || path === '/check_domain.json')) target = UP + url.pathname + url.search;
     if (!target) return new Response('not found', { status: 404 });
 
     const isDoc = /\/stream\/(mal|ani|s-2|sm)\//.test(target);
@@ -185,20 +166,7 @@ export default {
     const xrq = request.headers.get('x-requested-with');
     if (xrq) fh['X-Requested-With'] = xrq;
 
-    let up = await fetch(target, { headers: fh, redirect: 'follow', method: request.method, body: request.method !== 'GET' && request.method !== 'HEAD' ? request.body : undefined }).catch(e => null);
-    // MegaPlay sometimes answers server-to-server player-page requests with its own 404 page.
-    // Retry the page with other header sets (browser-like navigation) before giving up.
-    if (isDoc && request.method === 'GET' && up && (up.status === 404 || up.status === 403)) {
-      const variants = [
-        { 'User-Agent': UA, 'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8', 'Accept-Language': 'en-US,en;q=0.9', 'Upgrade-Insecure-Requests': '1' },
-        { 'User-Agent': UA, 'Accept': 'text/html,*/*', 'Accept-Language': 'en-US,en;q=0.9', 'Referer': MEDIA_REFERER, 'Sec-Fetch-Site': 'cross-site', 'Sec-Fetch-Mode': 'navigate', 'Sec-Fetch-Dest': 'iframe' },
-        { 'User-Agent': UA, 'Accept': '*/*', 'Referer': new URL(request.url).origin + '/' }
-      ];
-      for (const h of variants) {
-        const r = await fetch(target, { headers: h, redirect: 'follow' }).catch(e => null);
-        if (r && r.status < 400) { up = r; break; }
-      }
-    }
+    const up = await fetch(target, { headers: fh, redirect: 'follow', method: request.method, body: request.method !== 'GET' && request.method !== 'HEAD' ? request.body : undefined }).catch(e => null);
     if (!up) return new Response('proxy error', { status: 502 });
     const ct = (up.headers.get('content-type') || 'application/octet-stream').split(';')[0].toLowerCase();
     const textual = /^(text\/html|text\/css|text\/javascript|application\/javascript|application\/x-javascript|application\/json|text\/plain)/.test(ct);
