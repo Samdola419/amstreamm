@@ -8,34 +8,27 @@
   <style>
     html, body, iframe { margin: 0; width: 100%; height: 100%; border: 0; background: #000; }
     iframe { display: block; }
+    #shieldNote { position: fixed; left: 0; right: 0; bottom: 12%; text-align: center; color: #eee;
+      font: 14px/1.5 system-ui, sans-serif; text-shadow: 0 1px 3px #000; opacity: 0; transition: opacity .4s; pointer-events: none; }
+    #shieldNote.show { opacity: .95; }
   </style>
 </head>
 <body>
-  <!-- Pop-up shield (MegaPlay edition, rehoused).
-       Their page is served through our own /mgpx/* proxy (see server3.js locally; /api route in
-       production). The proxy strips lib/app.main.js, which is the ONLY script that:
-         - runs the "sandboxed iframe" probe that shows their big Opss! banner
-         - loads their ad engine (nekostream 1ad.js/3p.js -> llvpn.com popunder tag)
-       The remaining player (jwplayer + handle-bridge + e1-player) runs untouched, so Skip intro,
-       tap-to-see-options, quality menu and next episode still work.
-       With app.main.js gone, the sandbox hardens again with no false positives:
-         allow-scripts + allow-same-origin + allow-forms + allow-presentation
-         (no allow-popups / no allow-top-navigation / no allow-modals). -->
+  <!-- Pop-up shield (MegaPlay edition).
+       The player is served by our Cloudflare worker via /mgpx-embed?u=…: the same mirrored
+       MegaPlay page, but from a plain page URL on OUR worker origin, so browsers and
+       blockers never see a naked third-party embed to kick around. One worker = one address.
+       Locally, server3.js serves the same route so dev equals production.
+       The mirror itself still strips lib/app.main.js (their sandbox banner + ad engine), and
+       jwplayer + handle-bridge + e1-player stay untouched (Skip intro, quality menu, next ep). -->
   <iframe id="p" allow="autoplay; fullscreen; encrypted-media; picture-in-picture; screen-wake-lock" allowfullscreen referrerpolicy="unsafe-url"
           sandbox="allow-scripts allow-same-origin allow-forms allow-presentation"></iframe>
+  <div id="shieldNote"></div>
   <script>
-    // Where the mirrored MegaPlay lives:
-    //  - local dev (server3.js): '/mgpx'                       (same origin as this page)
-    //  - production Cloudflare worker: 'https://<your-worker>.workers.dev/mgpx'
-    //    (see CLOUDFLARE-SETUP.md — deploy megaplay-worker.js once, then paste its URL here)
-    // Primary: the Cloudflare Worker (free, keeps video bytes off Vercel).
-    // Fallback: the same proxy on this site (api/mgpx.js). If MegaPlay answers the Worker with its
-    // 404 page, the mirrored page reports "mp-miss" and we switch to the fallback for this and later plays.
-    const PRIMARY_BASE = 'https://soft-cell-f315.sammy12dop.workers.dev/mgpx';
-    const FALLBACK_BASE = PRIMARY_BASE;
-    let useFallback = false;
-    try { useFallback = localStorage.getItem('mp.useFallback') === '1'; } catch (_) {}
-    let WORKER_BASE = useFallback ? FALLBACK_BASE : PRIMARY_BASE;
+    // One worker = one address. Local dev servers are the same origin, so use it directly there.
+    const WORKER_BASE = (/^http:/.test(location.protocol) && /(^|\.)localhost$|^127\.0\.0\.1$|^192\.168\./.test(location.hostname))
+      ? location.origin
+      : 'https://soft-cell-f315.sammy12dop.workers.dev';
     const q = new URLSearchParams(location.search);
     const lang = q.get('lang') === 'dub' ? 'dub' : 'sub';
     const ep = q.get('ep') || '1';
@@ -43,59 +36,57 @@
     const ani = (q.get('ani') || '').replace(/[^\d]/g, '');
     const embed = (q.get('embed') || '').replace(/[^\d]/g, '');
     const t = Math.max(0, Math.floor(+q.get('t') || 0));
-    let src = '';
-    let generic = '';
+    function mirrorSubPath() {                       // the mirrored player page, under /mgpx
+      if (embed) return '/mgpx/stream/s-2/' + embed + '/' + lang;
+      if (mal) return '/mgpx/stream/mal/' + mal + '/' + ep + '/' + lang;
+      if (ani) return '/mgpx/stream/ani/' + ani + '/' + ep + '/' + lang;
+      return '';
+    }
     // Generic mode: any whitelisted embed URL rides the same shield (movies / series / cartoons).
-    generic = String(q.get('src') || '')
+    const generic = String(q.get('src') || '')
       .replace(/^https?:\/\//i, 'https://')
       .replace(/[^\w.\/:?=&%~+-]/g, '');
     const GENERIC_OK = /^https:\/\/[a-z0-9.-]*\b(vidspark\.to|vidsrc\.link|vidsrc\.pm|player\.videasy\.to|vid-src\.top|vidsrc\.sh)\//i;
+    let src = '';
     if (generic && GENERIC_OK.test(generic)) src = generic;
-    const buildSrc = base =>
-      embed ? base + '/stream/s-2/' + embed + '/' + lang
-      : mal ? base + '/stream/mal/' + mal + '/' + ep + '/' + lang
-      : ani ? base + '/stream/ani/' + ani + '/' + ep + '/' + lang : '';
-    if (!src) src = buildSrc(WORKER_BASE);
+    else if (mirrorSubPath()) src = WORKER_BASE + '/mgpx-embed?u=' + encodeURIComponent(mirrorSubPath());
     const f = document.getElementById('p');
     if (src) f.src = src;
 
-    // Watchdog: the mirrored (stripped) page has no jump-outs, but defense in depth costs nothing:
-    // if any future bundle ever navigates this frame to an unrecognised origin, put the stream back.
-    // location.origin is readable cross-origin, so this works even when the mirror lives on another
-    // host (Cloudflare worker). Generic embeds may legitimately repoint themselves, so they are exempt.
-    // Progress survives: a restore costs seconds, not episodes.
-    let EXPECTED = '';
-    try { EXPECTED = new URL(src, location.href).origin; } catch (_) { EXPECTED = location.origin; }
-    const bootTime = Date.now();
-    let lastRestore = 0;
-    f.addEventListener('load', () => {
-      if (!src || generic) return;                          // generic embeds may legitimately repoint themselves
-      if (Date.now() - bootTime < 2500) return;             // the initial embed page load itself
-      const now = Date.now();
-      if (now - lastRestore < 15000) return;                // no restore loops
-      let onOrigin = true;
-      try { onOrigin = f.contentWindow.location.origin === EXPECTED; } catch (_) { onOrigin = false; }
-      if (onOrigin) return;
-      lastRestore = now;
-      console.warn('[shield] player was swapped for an unexpected page; restoring the stream');
-      try { f.src = src; } catch (_) {}
-    });
-
-    // Pass the player's own messages (episode finished, progress) up to the site so it can auto-play the next episode.
+    // ---- Liveness watchdog (cross-origin safe) ----
+    // A failed swap-out usually leaves a silent loaded frame. A genuine mirror page always
+    // speaks soon after boot (fullscreen bridge message; playing-time events while running).
+    // A silent load -> reload once. Still silent -> show an honest note + report mp-miss upward
+    // so the player page can offer another server instead of looping black.
+    let loadGen = 0, spokeNow = false;
+    const note = document.getElementById('shieldNote');
+    function flashNote(text) {
+      note.textContent = text;
+      note.classList.add('show');
+      setTimeout(() => note.classList.remove('show'), 5000);
+    }
     window.addEventListener('message', function (e) {
-      if (e.source === f.contentWindow) {
-        // Worker got MegaPlay's 404 page: retry once through this site's own proxy instead of telling the app.
-        if (e.data && e.data.type === 'mp-miss' && !generic && !useFallback && WORKER_BASE !== FALLBACK_BASE) {
-          useFallback = true; WORKER_BASE = FALLBACK_BASE;
-          try { localStorage.setItem('mp.useFallback', '1'); } catch (_) {}
-          src = buildSrc(WORKER_BASE);
-          try { EXPECTED = new URL(src, location.href).origin; } catch (_) { EXPECTED = location.origin; }
-          lastRestore = Date.now();
-          f.src = src;
-          return;
-        }
-        try { parent.postMessage(e.data, '*'); } catch (_) {}
-      }
+      if (e.source !== f.contentWindow) return;
+      spokeNow = true;
+      if (!src) return;
+      try { parent.postMessage(e.data, '*'); } catch (_) {}
+    });
+    f.addEventListener('load', function () {
+      if (!src || generic) return;
+      spokeNow = false;
+      const g = ++loadGen;
+      setTimeout(function () {
+        if (g !== loadGen || spokeNow) return;       // healthy boot, or a newer load took over
+        console.warn('[shield] stream page went silent (likely swapped); reloading the stream');
+        try { f.src = src; } catch (_) {}
+        // second chance: watch this reload too; if it also stays silent, stop trying
+        const g2 = ++loadGen;
+        setTimeout(function () {
+          if (g2 !== loadGen || spokeNow) return;
+          flashNote('This stream won\'t stay embedded in your browser. Try another server or a different browser.');
+          try { parent.postMessage({ type: 'mp-miss' }, '*'); } catch (_) {}
+        }, 12000);
+      }, 12000);
     });
 
     // Optional resume: ?t=<seconds> seeks their player once it reports ready (their handle-bridge
