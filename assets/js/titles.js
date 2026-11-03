@@ -230,8 +230,7 @@ async function openAnime(aniId, malId, title, episodes, silent) {
   lang = 'sub'; epIndex = startEp;
   current = { type: 'anime', ani_id: aniId, openedId, mal_id: malId, imdb: '', tmdb: '', title, episodes: episodes || 12, anipubTitles: [title] };
   rememberContinue({ _type:'anime', id:openedId, idMal:malId, _title:title, episodes:episodes||12 });
-  // AniPub documents one direct iframe URL per episode, not separate SUB/DUB URLs.
-  // Audio/subtitle selection, when available, is handled inside AniPub's embedded player.
+  // The AniPub site player route accepts the selected SUB/DUB language.
   $('playerControls').innerHTML = '';
   renderServers(ANIME_SERVERS);
   try {
@@ -404,7 +403,7 @@ async function playAnime(i) {
     }
     renderAnimeEps();
     const server = ANIME_SERVERS[serverIdx] || ANIME_SERVERS[0];
-    const url = server.url(owner, epIndex + 1);
+    const url = server.url(owner, epIndex + 1, lang);
     if (!url) throw new Error(`AniPub does not have Episode ${epIndex + 1} for this anime.`);
 
     $('mediaMeta').textContent = [
