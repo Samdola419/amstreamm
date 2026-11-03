@@ -271,22 +271,13 @@ function setPlayerSrc(url) {
   hideNextUp(); nextUpShownFor = ''; syncNextUI();
   const fresh = old.cloneNode(false);
   fresh.removeAttribute('src');
-  // AniPub is cross-origin, so sandboxing this frame cannot be removed by the
-  // embedded page. Keep scripts/forms/media working, but deliberately do not
-  // grant allow-popups or allow-top-navigation: this blocks most ad pop-ups,
-  // new tabs, and attempts to send the viewer away from AnimeStream.
-  // Do not apply this to the same-origin MegaPlay shield used by movies/TV.
+  // Remove any inherited sandbox attribute for third-party video embeds.
+  // AniPub's /play page creates a nested player frame; sandbox restrictions on
+  // this outer iframe propagate to its descendants and can stop that player
+  // from loading or switching streams. Keep the direct embed unrestricted for
+  // compatibility. This means pop-up and in-frame ad redirects must be handled
+  // by request-level filtering (for example, a browser extension), not sandbox.
   fresh.removeAttribute('sandbox');
-  let isAniPubEmbed = false;
-  if (current && current.type === 'anime' && url) {
-    try {
-      const embedOrigin = new URL(String(url), window.location.href);
-      isAniPubEmbed = embedOrigin.protocol === 'https:' && /(^|\.)anipub\.org$/i.test(embedOrigin.hostname);
-    } catch (_) {}
-  }
-  if (isAniPubEmbed) {
-    fresh.setAttribute('sandbox', 'allow-forms allow-scripts allow-same-origin allow-presentation');
-  }
   if (url) fresh.setAttribute('src', url);
   fresh.addEventListener('load', onPlayerLoad);
   old.replaceWith(fresh);
@@ -485,3 +476,4 @@ function setServer(i) {
   else if (current.type === 'tv') loadTvServer();
   else if (current.type === 'anime') playAnime(epIndex);
 }
+
