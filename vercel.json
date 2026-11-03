@@ -2,13 +2,55 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "cleanUrls": true,
   "rewrites": [
-    { "source": "/((?:play|t|anime|movies|series|genre|category|list|continue|coming|manga)(?:/.*)?)", "destination": "/index.html" }
+    {
+      "source": "/mgpx-media",
+      "destination": "/api/mgpx?__m=1"
+    },
+    {
+      "source": "/mgpx-media/",
+      "destination": "/api/mgpx?__m=1"
+    },
+    {
+      "source": "/mgpx",
+      "destination": "/api/mgpx?__p=/"
+    },
+    {
+      "source": "/mgpx/:path*",
+      "destination": "/api/mgpx?__p=/:path*"
+    },
+    {
+      "source": "/lib/:path*",
+      "destination": "/api/mgpx?__p=/lib/:path*"
+    },
+    {
+      "source": "/stream/:path*",
+      "destination": "/api/mgpx?__p=/stream/:path*"
+    },
+    {
+      "source": "/images/:path*",
+      "destination": "/api/mgpx?__p=/images/:path*"
+    },
+    {
+      "source": "/domains",
+      "destination": "/api/mgpx?__p=/domains"
+    },
+    {
+      "source": "/check_domain.json",
+      "destination": "/api/mgpx?__p=/check_domain.json"
+    },
+    {
+      "source": "/((?:play|t|anime|movies|series|genre|category|list|continue|coming|manga)(?:/.*)?)",
+      "destination": "/index.html"
+    }
   ],
   "headers": [
     {
       "source": "/assets/(js|css)/(.*)",
       "headers": [
-        { "key": "Cache-Control", "value": "public, max-age=86400, stale-while-revalidate=604800" }
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=86400, stale-while-revalidate=604800"
+        }
       ]
     }
   ]
