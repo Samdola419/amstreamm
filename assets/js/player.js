@@ -1,5 +1,5 @@
 /* ----------------------------------------------------------------------
-   AnimeStream player server attempts, VAST ad engine, MegaPlay message relay
+   AnimeStream player server attempts, VAST ad engine, direct embed playback
    ---------------------------------------------------------------------- */
 function showPlayer() { setNav(''); closeSearch(); showPage('playerView'); }
 const VAST_TAG_URL = 'https://s.magsrv.com/v1/vast.php?idz=6051704';
@@ -105,9 +105,7 @@ function getCurrentServerAttempts(firstUrl) {
     const id = current.imdb || current.tmdb || current.id;
     if (id) entries.push({index: serverIdx, url: (TV_SERVERS[serverIdx] || TV_SERVERS[0]).url(id, season, episode)});
   } else if (current?.type === 'anime') {
-    // All anime servers join the chain, starting from the one the viewer is on.
-    // When one reports it has nothing for this title (MegaPlay on 18 Plus, for
-    // example), the player hops to the next automatically.
+    // AniPub's direct iframe URL is resolved in titles.js before playback starts.
     const episode = epIndex + 1;
     for (let step = 0; step < ANIME_SERVERS.length; step++) {
       const i = (serverIdx + step) % ANIME_SERVERS.length;
@@ -144,9 +142,7 @@ function tryPlaybackAttempt(token) {
   vastPendingUrl = attempt.url;
   updateActiveServer(attempt.index);
   setPlayerSrc(attempt.url);
-  // Anime: if the stream frame stays silent (no ready/progress/complete signal at
-  // all), this server has nothing for the title — hop down the chain.
-  if (current?.type === 'anime') armAnimeWatch(token); else clearAnimeWatch();
+  // AniPub returns a direct embed iframe; no provider-specific proxy watchdog is used.
   // Cross-origin embeds don't expose playable/error state, so only retry when navigation itself stalls.
   playbackTimer = setTimeout(() => {
     if (token !== playbackToken || playbackCurrentUrl !== attempt.url) return;
@@ -154,7 +150,7 @@ function tryPlaybackAttempt(token) {
     if (playbackQueueIndex < playbackQueue.length) tryPlaybackAttempt(token);
     else {
       const meta = $('mediaMeta');
-      if (meta && !meta.textContent.includes('Try another server')) meta.textContent += (current?.type === 'anime' ? ' · MegaPlay is slow to respond. Pick the episode again to retry.' : ' · This server is slow to respond. Give it a moment, or pick another server.');
+      if (meta && !meta.textContent.includes('Try another server')) meta.textContent += (current?.type === 'anime' ? ' · AniPub is taking longer than expected to load. Try the episode again.' : ' · This server is slow to respond. Give it a moment, or pick another server.');
     }
   }, 9000);
 }
@@ -167,38 +163,11 @@ function onPlayerLoad() {
   clearTimeout(playbackTimer);
 }
 $('player')?.addEventListener('load', onPlayerLoad);
-// ---- Anime server auto-hop ----
-// MegaPlay (and any stream host) may simply have nothing for a title — 18 Plus
-// anime is the usual casualty. A no-response watchdog plus the mirrored page's
-// own "mp-miss" report move straight down the server list instead of leaving
-// the viewer on a dead screen.
-let animeWatchTimer = null, mpSignalSeen = false;
-function clearAnimeWatch() { clearTimeout(animeWatchTimer); animeWatchTimer = null; }
-function armAnimeWatch(token) {
-  clearAnimeWatch();
-  mpSignalSeen = false;
-  animeWatchTimer = setTimeout(() => {
-    if (token !== playbackToken || mpSignalSeen) return;
-    hopAnimeServer('no response from this server');
-  }, 13000);
-}
-function hopAnimeServer(reason) {
-  clearAnimeWatch();
-  playbackQueueIndex++;
-  if (playbackQueueIndex < playbackQueue.length) {
-    tryPlaybackAttempt(playbackToken);
-  } else {
-    const meta = $('mediaMeta');
-    if (meta && !meta.textContent.includes('Try another server')) {
-      meta.textContent += ' · Every server came up empty for this title. Tap a server button to retry.';
-    }
-  }
-}
 // Changing an iframe's src adds an entry to the browser history, so Back needed two taps on the player page.
 // A fresh iframe that gets its src before it is inserted loads as a replacement, so Back only sees the app's own pages.
 // ---- Next episode + auto-next ----
 // The video lives in another site's page, so the only way to know an episode ended is if that player tells us (postMessage).
-// MegaPlay does ("complete" and "time"); other servers may not, and then the Next button is the way to continue.
+// Some embedded players send completion/time messages; otherwise the Next button is the way to continue.
 let autoNext = true;
 try { autoNext = localStorage.getItem('animestream.autonext') !== '0'; } catch (_) {}
 let nextUpTimer = null, nextUpShownFor = '';
@@ -272,18 +241,6 @@ function parsePlayerMessage(raw) {
 window.addEventListener('message', e => {
   const frame = $('player');
   if (!frame || e.source !== frame.contentWindow || vastAdActive) return; // only the video frame, never while the ad plays
-  // Server-alive signals for anime: ANY word from the stream frame clears the
-  // no-response watchdog. The mirrored MegaPlay page also posts {type:'mp-miss'}
-  // when it has nothing for this title, which hops to the next server instantly.
-  if (e.data && e.data.type === 'mp-miss') {
-    if (current?.type === 'anime') {
-      mpSignalSeen = true;
-      clearAnimeWatch();
-      hopAnimeServer('MegaPlay has no listing for this title');
-    }
-    return;
-  }
-  if (current?.type === 'anime') { mpSignalSeen = true; clearAnimeWatch(); }
   const m = parsePlayerMessage(e.data);
   if (!m) return;
   // Watch-position memory for movies & series: keep the resume point even when
@@ -300,13 +257,13 @@ window.addEventListener('message', e => {
   else if (m.duration > 120 && m.duration - m.time <= 20 && nextUpShownFor !== key) { nextUpShownFor = key; showNextUp(0); } // heads-up card near the end
 });
 
-// The player frame loads server embeds through our sandbox shield (megaplay.html generic mode).
+// Movie and series embeds continue through the existing shield page. Anime
+// embeds from AniPub are already direct HTTPS URLs and load in the main iframe.
 function setPlayerSrc(url) {
   const old = $('player');
   if (!old) return;
-  // Movie/series/cartoon embeds load through megaplay.html's generic mode: same sandbox as the
-  // MegaPlay shield — their popunder ads can't open windows or redirect our site, their player UI
-  // (server buttons, quality, skip, resume) keeps working. Anime URLs already point at megaplay.html.
+  // Movie/series embeds still use the existing sandboxed generic shield. Anime
+  // embeds use the direct AniPub URL returned by the documented API.
   if (/^https?:\/\//i.test(String(url)) && current && (current.type === 'movie' || current.type === 'tv')
       && String(url).indexOf('/megaplay.html?') !== 0) {
     url = '/megaplay.html?src=' + encodeURIComponent(url);
