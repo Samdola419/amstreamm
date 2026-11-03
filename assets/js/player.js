@@ -271,6 +271,22 @@ function setPlayerSrc(url) {
   hideNextUp(); nextUpShownFor = ''; syncNextUI();
   const fresh = old.cloneNode(false);
   fresh.removeAttribute('src');
+  // AniPub is cross-origin, so sandboxing this frame cannot be removed by the
+  // embedded page. Keep scripts/forms/media working, but deliberately do not
+  // grant allow-popups or allow-top-navigation: this blocks most ad pop-ups,
+  // new tabs, and attempts to send the viewer away from AnimeStream.
+  // Do not apply this to the same-origin MegaPlay shield used by movies/TV.
+  fresh.removeAttribute('sandbox');
+  let isAniPubEmbed = false;
+  if (current && current.type === 'anime' && url) {
+    try {
+      const embedOrigin = new URL(String(url), window.location.href);
+      isAniPubEmbed = embedOrigin.protocol === 'https:' && /(^|\.)anipub\.org$/i.test(embedOrigin.hostname);
+    } catch (_) {}
+  }
+  if (isAniPubEmbed) {
+    fresh.setAttribute('sandbox', 'allow-forms allow-scripts allow-same-origin allow-presentation');
+  }
   if (url) fresh.setAttribute('src', url);
   fresh.addEventListener('load', onPlayerLoad);
   old.replaceWith(fresh);
