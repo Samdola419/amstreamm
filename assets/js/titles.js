@@ -101,6 +101,121 @@ function loadTvServer() {
   playNow(srv.url(id, season, num));
 }
 
+// AniPub's public API documents direct, CORS-enabled streaming iframe links:
+// /api/find/:name -> numeric ID, then /v1/api/details/:id -> local.link (EP1)
+// and local.ep[] (EP2+). The returned src= prefix is stripped before embedding.
+const ANIPUB_BASE = 'https://anipub.org';
+const ANIPUB_ID_CACHE_PREFIX = 'animestream.anipub.id.v1:';
+const ANIPUB_ID_CACHE_TTL = 7 * 24 * 60 * 60 * 1000;
+let anipubPlayRequest = 0;
+
+function anipubNormalizeTitle(value) {
+  return String(value || '').normalize('NFKD').replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim().replace(/\s+/g, ' ');
+}
+function anipubTitleCandidates(media, fallback) {
+  const values = [
+    fallback,
+    media?.title?.english,
+    media?.title?.romaji,
+    media?.title?.native,
+    ...(Array.isArray(media?.synonyms) ? media.synonyms : [])
+  ];
+  const seen = new Set();
+  return values.map(v => String(v || '').trim()).filter(v => {
+    const key = anipubNormalizeTitle(v);
+    if (!key || seen.has(key)) return false;
+    seen.add(key); return true;
+  });
+}
+function anipubCacheKey(owner) {
+  return ANIPUB_ID_CACHE_PREFIX + String(owner?.ani_id || anipubNormalizeTitle(owner?.title) || 'unknown');
+}
+function readAniPubIdCache(owner) {
+  try {
+    const data = JSON.parse(localStorage.getItem(anipubCacheKey(owner)) || 'null');
+    return data && Number.isInteger(Number(data.id)) && Number(data.id) > 0 && data.expiresAt > Date.now()
+      ? Number(data.id) : 0;
+  } catch (_) { return 0; }
+}
+function writeAniPubIdCache(owner, id, matchedTitle) {
+  try {
+    localStorage.setItem(anipubCacheKey(owner), JSON.stringify({
+      id: Number(id), matchedTitle: String(matchedTitle || ''), expiresAt: Date.now() + ANIPUB_ID_CACHE_TTL
+    }));
+  } catch (_) { /* Private browsing or full storage: resolve again next time. */ }
+}
+async function anipubJson(path) {
+  const response = await fetch(ANIPUB_BASE + path, { headers: { Accept: 'application/json' } });
+  if (!response.ok) throw new Error(`AniPub API returned ${response.status}`);
+  return response.json();
+}
+async function findAniPubAnime(owner) {
+  if (owner.anipubId) return Number(owner.anipubId);
+  const cached = readAniPubIdCache(owner);
+  if (cached) { owner.anipubId = cached; return cached; }
+
+  const candidates = Array.isArray(owner.anipubTitles) && owner.anipubTitles.length
+    ? owner.anipubTitles
+    : anipubTitleCandidates({
+        title: { english: owner.title, romaji: owner.romaji, native: owner.nativeTitle },
+        synonyms: owner.synonyms
+      }, owner.title);
+
+  // Prefer AniPub's documented exact-title finder. Try alternate AniList titles
+  // and synonyms only when the primary title is not in AniPub's catalogue.
+  for (const title of candidates) {
+    try {
+      const found = await anipubJson('/api/find/' + encodeURIComponent(title));
+      const id = Number(found?.id);
+      if (found?.exist === true && Number.isInteger(id) && id > 0) {
+        owner.anipubId = id;
+        writeAniPubIdCache(owner, id, title);
+        return id;
+      }
+    } catch (_) { /* Try the next known title spelling. */ }
+  }
+
+  // The documented quick-search endpoint can expose the exact catalogue title
+  // when a title finder spelling differs; still require an exact normalized match.
+  for (const title of candidates.slice(0, 3)) {
+    try {
+      const results = await anipubJson('/api/search/' + encodeURIComponent(title));
+      const hit = Array.isArray(results) ? results.find(item =>
+        anipubNormalizeTitle(item?.Name) === anipubNormalizeTitle(title)
+      ) : null;
+      const id = Number(hit?.Id ?? hit?.id ?? hit?._id);
+      if (hit && Number.isInteger(id) && id > 0) {
+        owner.anipubId = id;
+        writeAniPubIdCache(owner, id, hit.Name || title);
+        return id;
+      }
+    } catch (_) { /* Keep checking known aliases. */ }
+  }
+  throw new Error('AniPub does not have an exact listing for this anime yet.');
+}
+function anipubEmbedUrl(value) {
+  let raw = String(value || '').trim().replace(/^src=/i, '').trim();
+  if (!raw) return '';
+  try {
+    const url = new URL(raw, ANIPUB_BASE);
+    if (url.protocol !== 'http:' && url.protocol !== 'https:') return '';
+    if (url.protocol === 'http:') url.protocol = 'https:';
+    return url.href;
+  } catch (_) { return ''; }
+}
+async function getAniPubEpisodeUrls(id) {
+  const data = await anipubJson('/v1/api/details/' + encodeURIComponent(id));
+  const local = data?.local;
+  if (!local) throw new Error('AniPub returned no streaming record for this anime.');
+  // AniPub's documented numbering: local.link is episode 1; local.ep[0] is episode 2.
+  const urls = [anipubEmbedUrl(local.link)];
+  (Array.isArray(local.ep) ? local.ep : []).forEach(item => urls.push(anipubEmbedUrl(item?.link)));
+  while (urls.length && !urls[urls.length - 1]) urls.pop();
+  if (!urls.length || !urls[0]) throw new Error('AniPub has no playable episode links for this anime.');
+  return urls;
+}
+
 async function openAnime(aniId, malId, title, episodes, silent) {
   if (!silent) pushHist({ kind: 'player', playerType: 'anime', aniId, malId, title, episodes });
   closeSearch(); showPlayer();
@@ -112,12 +227,13 @@ async function openAnime(aniId, malId, title, episodes, silent) {
   $('mediaTitle').textContent = title;
   $('mediaMeta').textContent = 'Loading…';
   setEpisodeMode(true);
-  lang = saved?.lang === 'dub' ? 'dub' : 'sub'; epIndex = startEp;
-  current = { type: 'anime', ani_id: aniId, openedId, mal_id: malId, imdb: '', tmdb: '', title, episodes: episodes || 12 };
+  lang = 'sub'; epIndex = startEp;
+  current = { type: 'anime', ani_id: aniId, openedId, mal_id: malId, imdb: '', tmdb: '', title, episodes: episodes || 12, anipubTitles: [title] };
   rememberContinue({ _type:'anime', id:openedId, idMal:malId, _title:title, episodes:episodes||12 });
-  $('playerControls').innerHTML = `<button class="lang-btn ${lang === 'sub' ? 'active' : ''}" id="btnSub" onclick="setLang('sub')">SUB</button>
-    <button class="lang-btn ${lang === 'dub' ? 'active' : ''}" id="btnDub" onclick="setLang('dub')">DUB</button>`;
-  renderServers(ANIME_SERVERS); // viewers can switch server manually if one misses their title
+  // AniPub documents one direct iframe URL per episode, not separate SUB/DUB URLs.
+  // Audio/subtitle selection, when available, is handled inside AniPub's embedded player.
+  $('playerControls').innerHTML = '';
+  renderServers(ANIME_SERVERS);
   try {
     const [info, map] = await Promise.all([
       anilist(Q_ANIME_INFO, { id: aniId }).catch(() => null),
@@ -133,7 +249,13 @@ async function openAnime(aniId, malId, title, episodes, silent) {
       imdb: maps.imdb_id || '',
       tmdb: maps.themoviedb_id || '',
       title: m ? titleOf(m) : title,
+      romaji: m?.title?.romaji || '',
+      nativeTitle: m?.title?.native || '',
+      synonyms: m?.synonyms || [],
+      anipubTitles: anipubTitleCandidates(m, title),
       episodes: m?.episodes || map?.episodeCount || episodes || 24,
+      seasonYear: m?.seasonYear || '',
+      averageScore: m?.averageScore || 0,
       genres: m?.genres || []
     };
     current.epTitles = map?.episodes || {};
@@ -228,8 +350,12 @@ function setAnimeSeason(i) {
   if (!c || c.type !== 'anime' || !c.seasons?.[i]) return;
   const s = c.seasons[i];
   c.seasonIdx = i; c.ani_id = s.id; c.mal_id = s.idMal || 0; c.imdb = ''; c.tmdb = '';
+  c.title = titleOf(s); c.romaji = s.title?.romaji || ''; c.nativeTitle = s.title?.native || '';
+  c.synonyms = s.synonyms || []; c.anipubTitles = anipubTitleCandidates(s, c.title);
+  c.anipubId = 0; c.anipubEpisodes = null;
   c.episodes = Math.min(Math.max(s.episodes || 12, 1), 2000); c.epTitles = {};
   epIndex = 0;
+  $('mediaTitle').textContent = c.title;
   $('mediaMeta').textContent = [titleOf(s), s.seasonYear, c.episodes + ' eps'].filter(Boolean).join(' · ');
   renderAnimeSeasons(); renderAnimeEps(); playAnime(0);
   fetch(`https://api.ani.zip/mappings?anilist_id=${s.id}`).then(r => r.ok ? r.json() : null).then(map => {
@@ -247,20 +373,58 @@ function renderAnimeEps() {
   }
   $('episodeList').innerHTML = html;
 }
-function playAnime(i) {
+async function playAnime(i) {
   if (!current || current.type !== 'anime') return;
-  epIndex = i;
-  saveProgress({ e: i, ani: current.ani_id, lang });
-  document.querySelectorAll('.ep').forEach((el, idx) => el.classList.toggle('active', idx === i));
-  const ep = i + 1;
-  const srv = ANIME_SERVERS[serverIdx] || ANIME_SERVERS[0];
-  const url = srv.url(current, ep, lang);
-  if (!url) {
-    serverIdx = 0;
-    playAnime(i); // this server has no id for the title — start MegaPlay instead
-    return;
+  const owner = current;
+  const request = ++anipubPlayRequest;
+  epIndex = Math.max(0, Number(i) || 0);
+  saveProgress({ e: epIndex, ani: owner.ani_id });
+  document.querySelectorAll('.ep').forEach((el, idx) => el.classList.toggle('active', idx === epIndex));
+  $('mediaMeta').textContent = 'Connecting to AniPub…';
+
+  try {
+    // Resolve against a snapshot so an older request cannot write the previous
+    // season's AniPub ID into the current season after the viewer switches.
+    const lookupOwner = { ...owner };
+    const id = await findAniPubAnime(lookupOwner);
+    if (request !== anipubPlayRequest || current !== owner) return;
+    owner.anipubId = id;
+    if (!Array.isArray(owner.anipubEpisodes)) {
+      const episodeUrls = await getAniPubEpisodeUrls(id);
+      if (request !== anipubPlayRequest || current !== owner) return;
+      owner.anipubEpisodes = episodeUrls;
+    }
+
+    const available = owner.anipubEpisodes.length;
+    if (!available) throw new Error('AniPub has no playable episodes for this anime.');
+    owner.episodes = available;
+    if (epIndex >= available) {
+      epIndex = available - 1;
+      saveProgress({ e: epIndex, ani: owner.ani_id });
+    }
+    renderAnimeEps();
+    const server = ANIME_SERVERS[serverIdx] || ANIME_SERVERS[0];
+    const url = server.url(owner, epIndex + 1);
+    if (!url) throw new Error(`AniPub does not have Episode ${epIndex + 1} for this anime.`);
+
+    $('mediaMeta').textContent = [
+      owner.seasonYear,
+      owner.averageScore ? `★ ${(owner.averageScore / 10).toFixed(1)}` : '',
+      (owner.genres || []).slice(0, 3).join(', '),
+      `${available} episodes`,
+      'AniPub'
+    ].filter(Boolean).join(' · ');
+    // Direct third-party iframe URL from AniPub. No /megaplay.html, /api/mgpx,
+    // Cloudflare Worker, Vercel media relay, or HLS proxy is involved.
+    playNow(url);
+  } catch (error) {
+    if (request !== anipubPlayRequest || current !== owner) return;
+    const message = error?.message || 'Could not load an AniPub stream.';
+    $('mediaMeta').textContent = message;
+    // Clear the previous episode so an unavailable selection does not keep
+    // showing stale playback from the last episode.
+    setPlayerSrc('about:blank');
   }
-  playNow(url);
 }
 function setLang(l) {
   lang = l;
