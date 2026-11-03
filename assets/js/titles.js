@@ -230,8 +230,14 @@ async function openAnime(aniId, malId, title, episodes, silent) {
   lang = 'sub'; epIndex = startEp;
   current = { type: 'anime', ani_id: aniId, openedId, mal_id: malId, imdb: '', tmdb: '', title, episodes: episodes || 12, anipubTitles: [title] };
   rememberContinue({ _type:'anime', id:openedId, idMal:malId, _title:title, episodes:episodes||12 });
-  // The AniPub site player route accepts the selected SUB/DUB language.
-  $('playerControls').innerHTML = '';
+  // AniPub's /play route accepts an explicit SUB or DUB path segment.
+  // Keep both controls visible in the existing player-controls row so viewers
+  // can switch the language without leaving the episode.
+  $('playerControls').innerHTML = `
+    <button type="button" id="btnSub" class="lang-btn active"
+      onclick="setLang('sub')" aria-pressed="true" title="Japanese audio with subtitles">SUB</button>
+    <button type="button" id="btnDub" class="lang-btn"
+      onclick="setLang('dub')" aria-pressed="false" title="Dubbed audio">DUB</button>`;
   renderServers(ANIME_SERVERS);
   try {
     const [info, map] = await Promise.all([
@@ -426,9 +432,13 @@ async function playAnime(i) {
   }
 }
 function setLang(l) {
-  lang = l;
-  $('btnSub')?.classList.toggle('active', l === 'sub');
-  $('btnDub')?.classList.toggle('active', l === 'dub');
+  if (!current || current.type !== 'anime') return;
+  lang = String(l || '').toLowerCase() === 'dub' ? 'dub' : 'sub';
+  const sub = $('btnSub'), dub = $('btnDub');
+  sub?.classList.toggle('active', lang === 'sub');
+  dub?.classList.toggle('active', lang === 'dub');
+  sub?.setAttribute('aria-pressed', String(lang === 'sub'));
+  dub?.setAttribute('aria-pressed', String(lang === 'dub'));
   playAnime(epIndex);
 }
 
