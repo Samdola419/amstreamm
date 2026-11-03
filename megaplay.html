@@ -14,21 +14,17 @@
   </style>
 </head>
 <body>
-  <!-- Pop-up shield (MegaPlay edition).
-       The player is served by our Cloudflare worker via /mgpx-embed?u=…: the same mirrored
-       MegaPlay page, but from a plain page URL on OUR worker origin, so browsers and
-       blockers never see a naked third-party embed to kick around. One worker = one address.
-       Locally, server3.js serves the same route so dev equals production.
-       The mirror itself still strips lib/app.main.js (their sandbox banner + ad engine), and
-       jwplayer + handle-bridge + e1-player stay untouched (Skip intro, quality menu, next ep). -->
-  <iframe id="p" allow="autoplay; fullscreen; encrypted-media; picture-in-picture; screen-wake-lock" allowfullscreen referrerpolicy="unsafe-url"
-          sandbox="allow-scripts allow-same-origin allow-forms allow-presentation"></iframe>
+  <!-- MegaPlay is served from the separate Vercel project origin through /mgpx.
+       MegaPlay rejects sandboxed iframes, so only its iframe is loaded without sandbox.
+       Other generic embed providers retain the restrictive sandbox. -->
+  <iframe id="p" allow="autoplay; fullscreen; encrypted-media; picture-in-picture; screen-wake-lock" allowfullscreen referrerpolicy="unsafe-url"></iframe>
   <div id="shieldNote"></div>
   <script>
-    // One worker = one address. Local dev servers are the same origin, so use it directly there.
-    const WORKER_BASE = (/^http:/.test(location.protocol) && /(^|\.)localhost$|^127\.0\.0\.1$|^192\.168\./.test(location.hostname))
+    // Keep the proxy on the Vercel deployment origin, separate from www.amstream.site.
+    // Local server3.js still works directly during development.
+    const PROXY_BASE = (/^http:/.test(location.protocol) && /(^|\.)localhost$|^127\.0\.0\.1$|^192\.168\./.test(location.hostname))
       ? location.origin
-      : 'https://soft-cell-f315.sammy12dop.workers.dev';
+      : 'https://amstreamm.vercel.app';
     const q = new URLSearchParams(location.search);
     const lang = q.get('lang') === 'dub' ? 'dub' : 'sub';
     const ep = q.get('ep') || '1';
@@ -47,10 +43,16 @@
       .replace(/^https?:\/\//i, 'https://')
       .replace(/[^\w.\/:?=&%~+-]/g, '');
     const GENERIC_OK = /^https:\/\/[a-z0-9.-]*\b(vidspark\.to|vidsrc\.link|vidsrc\.pm|player\.videasy\.to|vid-src\.top|vidsrc\.sh)\//i;
+    const mpPath = mirrorSubPath();
+    const isMegaPlay = !!mpPath;
     let src = '';
     if (generic && GENERIC_OK.test(generic)) src = generic;
-    else if (mirrorSubPath()) src = WORKER_BASE + '/mgpx-embed?u=' + encodeURIComponent(mirrorSubPath());
+    else if (isMegaPlay) src = PROXY_BASE + mpPath;
     const f = document.getElementById('p');
+    // MegaPlay explicitly rejects any iframe sandbox attribute. Preserve the
+    // existing sandbox for generic non-MegaPlay embed providers.
+    if (isMegaPlay) f.removeAttribute('sandbox');
+    else f.setAttribute('sandbox', 'allow-scripts allow-same-origin allow-forms allow-presentation');
     if (src) f.src = src;
 
     // ---- Liveness watchdog (cross-origin safe) ----
