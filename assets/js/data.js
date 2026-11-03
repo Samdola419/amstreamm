@@ -28,11 +28,21 @@ const TV_SERVERS = [
   { name: 'Videasy', url: (id,s,e) => `https://player.videasy.to/tv/${id}/${s}/${e}` },
 ];
 
-// Anime playback uses AniPub's documented direct iframe links. Anime URLs are
-// loaded from AniPub in titles.js and passed straight to the main player iframe;
-// they do not pass through the MegaPlay/Vercel/Cloudflare proxy.
+// Anime playback uses AniPub's own embedded-player route.
+// AniPub's backend route is /play/:id/:ep/:lang; ep is zero-based
+// (0 = episode 1) and lang accepts sub or dub. The page is embedded directly,
+// without routing video traffic through AnimeStream/Vercel/Cloudflare proxies.
 const ANIME_SERVERS = [
-  { name: 'AniPub', url: (m, ep) => Array.isArray(m.anipubEpisodes) ? (m.anipubEpisodes[ep - 1] || '') : '' },
+  {
+    name: 'AniPub',
+    url: (m, ep, language) => {
+      const id = Number(m?.anipubId || 0);
+      if (!Number.isInteger(id) || id < 1) return '';
+      const episodeIndex = Math.max(0, Number(ep || 1) - 1);
+      const lang = String(language || 'sub').toLowerCase() === 'dub' ? 'dub' : 'sub';
+      return `https://anipub.org/play/${id}/${episodeIndex}/${lang}`;
+    }
+  },
 ];
 const ANIME_GENRES = ['Action','Romance','Comedy','Drama','Fantasy','Horror','Sci-Fi','Slice of Life','Sports','Supernatural','Mystery','Adventure'];
 const MOVIE_CATS = ['New','Popular','Action','Comedy','Adventure','Animation','Sci-Fi','Fantasy','Family','Drama'];
