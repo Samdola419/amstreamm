@@ -230,14 +230,9 @@ async function openAnime(aniId, malId, title, episodes, silent) {
   lang = 'sub'; epIndex = startEp;
   current = { type: 'anime', ani_id: aniId, openedId, mal_id: malId, imdb: '', tmdb: '', title, episodes: episodes || 12, anipubTitles: [title] };
   rememberContinue({ _type:'anime', id:openedId, idMal:malId, _title:title, episodes:episodes||12 });
-  // AniPub's /play route accepts an explicit SUB or DUB path segment.
-  // Keep both controls visible in the existing player-controls row so viewers
-  // can switch the language without leaving the episode.
-  $('playerControls').innerHTML = `
-    <button type="button" id="btnSub" class="lang-btn active"
-      onclick="setLang('sub')" aria-pressed="true" title="Japanese audio with subtitles">SUB</button>
-    <button type="button" id="btnDub" class="lang-btn"
-      onclick="setLang('dub')" aria-pressed="false" title="Dubbed audio">DUB</button>`;
+  // AniPub documents one direct iframe URL per episode, not separate SUB/DUB URLs.
+  // Audio/subtitle selection, when available, is handled inside AniPub's embedded player.
+  $('playerControls').innerHTML = '';
   renderServers(ANIME_SERVERS);
   try {
     const [info, map] = await Promise.all([
@@ -409,7 +404,7 @@ async function playAnime(i) {
     }
     renderAnimeEps();
     const server = ANIME_SERVERS[serverIdx] || ANIME_SERVERS[0];
-    const url = server.url(owner, epIndex + 1, lang);
+    const url = server.url(owner, epIndex + 1);
     if (!url) throw new Error(`AniPub does not have Episode ${epIndex + 1} for this anime.`);
 
     $('mediaMeta').textContent = [
@@ -432,13 +427,9 @@ async function playAnime(i) {
   }
 }
 function setLang(l) {
-  if (!current || current.type !== 'anime') return;
-  lang = String(l || '').toLowerCase() === 'dub' ? 'dub' : 'sub';
-  const sub = $('btnSub'), dub = $('btnDub');
-  sub?.classList.toggle('active', lang === 'sub');
-  dub?.classList.toggle('active', lang === 'dub');
-  sub?.setAttribute('aria-pressed', String(lang === 'sub'));
-  dub?.setAttribute('aria-pressed', String(lang === 'dub'));
+  lang = l;
+  $('btnSub')?.classList.toggle('active', l === 'sub');
+  $('btnDub')?.classList.toggle('active', l === 'dub');
   playAnime(epIndex);
 }
 
