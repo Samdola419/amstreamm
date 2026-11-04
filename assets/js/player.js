@@ -271,13 +271,6 @@ function setPlayerSrc(url) {
   hideNextUp(); nextUpShownFor = ''; syncNextUI();
   const fresh = old.cloneNode(false);
   fresh.removeAttribute('src');
-  // Remove any inherited sandbox attribute for third-party video embeds.
-  // AniPub's /play page creates a nested player frame; sandbox restrictions on
-  // this outer iframe propagate to its descendants and can stop that player
-  // from loading or switching streams. Keep the direct embed unrestricted for
-  // compatibility. This means pop-up and in-frame ad redirects must be handled
-  // by request-level filtering (for example, a browser extension), not sandbox.
-  fresh.removeAttribute('sandbox');
   if (url) fresh.setAttribute('src', url);
   fresh.addEventListener('load', onPlayerLoad);
   old.replaceWith(fresh);
@@ -476,4 +469,3 @@ function setServer(i) {
   else if (current.type === 'tv') loadTvServer();
   else if (current.type === 'anime') playAnime(epIndex);
 }
-
