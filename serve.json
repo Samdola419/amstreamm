@@ -1,0 +1,37 @@
+{
+  "cleanUrls": true,
+  "rewrites": [
+    {
+      "source": "/play/**",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/t/**",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/genre/**",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/room/**",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/movies/**",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/series/**",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/category/**",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/anime/**",
+      "destination": "/index.html"
+    }
+  ]
+}

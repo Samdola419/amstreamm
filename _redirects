@@ -1,0 +1,9 @@
+# Netlify / Cloudflare Pages. Real files (e.g. movies/index.html) win over these rules.
+/play/*  /index.html  200
+/t/*  /index.html  200
+/genre/*  /index.html  200
+/room/*  /index.html  200
+/movies/*  /index.html  200
+/series/*  /index.html  200
+/category/*  /index.html  200
+/anime/*  /index.html  200

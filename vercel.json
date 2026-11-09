@@ -1,0 +1,49 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "cleanUrls": true,
+  "rewrites": [
+    {
+      "source": "/play/:path*",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/t/:path*",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/genre/:path*",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/room/:path*",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/movies/:path+",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/series/:path+",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/category/:path+",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/anime/:path+",
+      "destination": "/index.html"
+    }
+  ],
+  "headers": [
+    {
+      "source": "/assets/(js|css)/(.*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=86400, stale-while-revalidate=604800"
+        }
+      ]
+    }
+  ]
+}
