@@ -320,7 +320,7 @@ function roomRenderMembers() {
   }
   const host = activeRoom.members.find(member => member.role === 'host');
   const status = roomEl('roomPlaybackStatus');
-  if (status) status.textContent = roomIsHost() ? 'Your player controls the room' : `${host?.name || 'The host'} controls playback`;
+  if (status) status.textContent = roomIsHost() ? 'You control playback' : `${host?.name || 'The host'} controls playback`;
   const note = roomEl('roomProviderNote'); if (note) note.hidden = roomIsHost();
   const endButton = roomEl('roomEndButton'); if (endButton) endButton.hidden = !roomIsHost();
   const localVolume = roomEl('roomLocalVolumeControl'); if (localVolume) localVolume.hidden = roomIsHost();
