@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -198,12 +198,17 @@
           <div class="player-info">
             <h1 id="mediaTitle"></h1>
             <div class="meta" id="mediaMeta"></div>
-            <div class="player-actions"><button type="button" class="ep-toggle" id="epToggle" onclick="toggleEpisodes()" aria-expanded="false" style="display:none"><i class="ri-list-check" aria-hidden="true"></i> Episodes</button><button type="button" class="ep-toggle" id="nextBtn" onclick="goNextEpisode()" style="display:none">Next ›</button><button type="button" class="ep-toggle active" id="autoNextToggle" onclick="toggleAutoNext()" aria-pressed="true" style="display:none">Auto-next: On</button></div>
-            <div class="room-player-entry"><button type="button" id="createRoomButton" onclick="createWatchRoom()"><i class="ri-group-line" aria-hidden="true"></i><span>Watch Together</span></button></div>
-            <div class="server-label" id="serverLabel" style="display:none">Servers</div>
-            <div class="server-row" id="serverRow"></div>
-            <div class="lang-btns" id="playerControls"></div>
-            <div class="lang-btns" id="animeSeasons"></div>
+            <div class="watch-deck" id="watchDeck">
+              <div class="deck-row deck-main">
+                <div class="player-actions"><button type="button" class="ep-toggle" id="epToggle" onclick="toggleEpisodes()" aria-expanded="false" style="display:none"><i class="ri-list-check" aria-hidden="true"></i> Episodes</button><button type="button" class="ep-toggle" id="nextBtn" onclick="goNextEpisode()" style="display:none">Next ›</button><button type="button" class="ep-toggle active" id="autoNextToggle" onclick="toggleAutoNext()" aria-pressed="true" style="display:none">Auto-next: On</button></div>
+                <div class="room-player-entry"><button type="button" id="createRoomButton" onclick="createWatchRoom()"><i class="ri-group-line" aria-hidden="true"></i><span>Watch Together</span></button></div>
+              </div>
+              <div class="deck-row deck-options">
+                <div class="deck-group"><div class="lang-btns seg" id="playerControls"></div></div>
+                <div class="deck-group"><div class="lang-btns seg" id="animeSeasons"></div></div>
+                <div class="deck-group deck-servers"><div class="server-label" id="serverLabel" style="display:none">Servers</div><div class="server-row seg" id="serverRow"></div></div>
+              </div>
+            </div>
           </div>
         </div>
         <aside class="player-side">
