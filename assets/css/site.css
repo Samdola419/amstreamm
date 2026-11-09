@@ -2522,21 +2522,36 @@ html.auth-enabled .login-card h2.cloud-only { display: block; }
 .watch-deck .deck-main:not(:has(button:not([hidden]):not([style*="none"]))),
 .watch-deck:not(:has(.deck-main button:not([hidden]):not([style*="none"]), .seg:not(:empty):not([style*="none"]))) { display: none !important; }
 
-/* in a room, the deck is the HOST's remote */
-.player-layout.room-active .watch-deck::before { content: 'Host controls · everyone follows your player'; color: #ff9b9b; font-size: .68rem; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
 
-/* ---------- Desktop watch page: size the video so the deck is always on screen ---------- */
+/* ---------- Desktop watch page: video → controls → title, all on screen (works on short, scaled laptop screens) ---------- */
 @media (min-width: 861px) {
   #playerView.active .player-layout,
   #playerView.active .player-layout.room-active {
-    --vid-w: max(560px, calc((100vh - 400px) * 16 / 9));
+    --vid-w: max(480px, calc((100vh - 230px) * 16 / 9));
     grid-template-columns: minmax(0, var(--vid-w)) minmax(320px, 380px);
     justify-content: center;
     align-items: stretch;
     gap: 24px;
   }
-  #playerView.active .player-layout > div:first-child { padding-bottom: 8px; }
-  #playerView.active .player-layout.room-active .video-wrap { border-radius: 16px; }
+  /* left column: video, then the control bar right under it, then the title */
+  #playerView.active .player-layout > div:first-child { display: flex; flex-direction: column; padding-bottom: 8px; scrollbar-width: thin; }
+  #playerView.active .player-layout > div:first-child .video-wrap { flex: none; width: 100%; order: 0; border-radius: 16px; }
+  #playerView.active .player-layout > div:first-child .player-info { display: contents; }
+  #playerView.active .player-info .watch-deck { order: 1; flex: none; }
+  #playerView.active .player-info h1 { order: 2; margin: 14px 0 3px; font-size: 1.25rem; }
+  #playerView.active .player-info .meta { order: 2; margin: 0 0 8px; font-size: .86rem; }
+
+  /* compact toolbar: two tidy rows */
+  .watch-deck { gap: 10px; margin: 10px 0 0; padding: 10px 12px; border-radius: 14px; }
+  .watch-deck .deck-main { flex-wrap: nowrap; justify-content: flex-start; gap: 8px 12px; }
+  .watch-deck .room-player-entry { margin-left: auto; }
+  .watch-deck .ep-toggle, .watch-deck .room-player-entry button { height: 36px; min-height: 36px; font-size: .82rem; }
+  .watch-deck .room-player-entry button i { width: 26px; height: 26px; }
+  .watch-deck .deck-options { align-items: center; gap: 10px 26px; padding-top: 10px; }
+  .watch-deck .deck-group { flex-direction: row; align-items: center; gap: 10px; }
+  #playerView.active .watch-deck .seg button { height: 30px; min-height: 30px; padding: 0 14px; font-size: .8rem; }
+  /* in a room the deck is the host's remote */
+  .player-layout.room-active .watch-deck .deck-main::before { content: 'Host'; flex: none; padding: 4px 9px; border-radius: 999px; background: rgba(239, 51, 51, .16); color: #ff9b9b; font-size: .66rem; font-weight: 800; letter-spacing: .09em; text-transform: uppercase; }
 }
 
 /* ---------- Phones / tablets (solo + host) ---------- */
