@@ -1,3 +1,0 @@
-# Any path that is not a real file opens the app shell (Netlify, Cloudflare Pages).
-# Real pages (/anime, /movies, ...) are matched first because they exist as files.
-/*    /index.html   200
