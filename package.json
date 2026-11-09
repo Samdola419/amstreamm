@@ -1,0 +1,8 @@
+{
+  "name": "animestream",
+  "private": true,
+  "scripts": {
+    "start": "node server.js",
+    "build:pages": "node scripts/build-pages.js"
+  }
+}
